@@ -9,6 +9,9 @@ interface User {
   roles: string[];
   isVerified: boolean;
   createdAt: string;
+  // Added fields to match Dashboard usage (assuming backend provides them or we mock)
+  name?: string;
+  avatar?: string;
 }
 
 interface AuthContextType {

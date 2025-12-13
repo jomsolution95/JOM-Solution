@@ -41,7 +41,18 @@ import { Facebook, Twitter, Linkedin, Instagram, Mail, ArrowRight, Heart, Check 
 import { TourOverlay } from './components/onboarding/TourOverlay';
 
 const MainLayout: React.FC = () => {
-  // ... existing hooks
+  const { user } = useAuth();
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newsletterEmail) {
+      setNewsletterSubscribed(true);
+      setNewsletterEmail('');
+      setTimeout(() => setNewsletterSubscribed(false), 3000);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen w-full overflow-x-hidden">

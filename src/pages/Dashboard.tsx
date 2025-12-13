@@ -366,9 +366,9 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      if (user.role === 'individual') {
+      if (user.roles.includes('individual')) {
         startTour('candidate_dashboard');
-      } else if (user.role === 'company') {
+      } else if (user.roles.includes('company')) {
         startTour('recruiter_dashboard');
       }
     }
@@ -378,8 +378,37 @@ export const Dashboard: React.FC = () => {
     return <Navigate to="/login" />;
   }
 
+  // Helper to determine primary role for dashboard view (re-declared for clarity or lifted if possible, but fine here for now)
+  // Actually, better to lift it or use the one inside renderContent? 
+  // Let's just fix the header access safely.
+
+  // ... (renderContent is defined below in the file structure order, so we skip that)
+
+  // ... (Menu items defined below)
+
+  // ... (Return statement)
+
+  // Inside the main return block, fixing the shortcuts and header:
+  // We need to target the Raccourcis link and Header specifically with separate edits or just include them here if contiguous?
+  // They are not contiguous with the block above. I should use a separate replace call for the useEffect and another for the bottom part.
+
+  // EDIT 1: Fix useEffect ONLY here.
+
+
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  // Helper to determine primary role for dashboard view
+  const getPrimaryRole = () => {
+    if (user.roles.includes('company')) return 'company';
+    if (user.roles.includes('etablissement')) return 'etablissement';
+    return 'individual';
+  }
+  const primaryRole = getPrimaryRole();
+
   const renderContent = () => {
-    switch (user.role) {
+    switch (primaryRole) {
       case 'company': return <CompanyDashboard />;
       case 'etablissement': return <EtablissementDashboard />;
 
@@ -389,7 +418,7 @@ export const Dashboard: React.FC = () => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Vue d\'ensemble', path: '/dashboard' },
-    { icon: ShoppingBag, label: user.role === 'individual' ? 'Mes Commandes' : 'Mes Services', path: '/my-items' },
+    { icon: ShoppingBag, label: primaryRole === 'individual' ? 'Mes Commandes' : 'Mes Services', path: '/my-items' },
     { icon: Users, label: 'Réseaux', path: '/reseaux' },
     { icon: MessageSquare, label: 'Messages', path: '/messages' },
     { icon: CreditCard, label: 'Facturation', path: '/billing' },
@@ -402,11 +431,11 @@ export const Dashboard: React.FC = () => {
       <aside className="hidden lg:flex flex-col w-72 bg-white dark:bg-gray-800 border-r border-gray-100 dark:border-gray-700 pt-6 pb-10 sticky top-16 self-start h-[calc(100vh-4rem)] overflow-y-auto z-30 shadow-sm">
         <div className="px-6 mb-8">
           <div className="flex items-center gap-3 p-3 bg-primary-50 dark:bg-gray-700 rounded-xl border border-primary-100 dark:border-gray-600">
-            <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+            <img src={user.avatar || `https://ui-avatars.com/api/?name=${user.email}`} alt={user.name || user.email} className="w-10 h-10 rounded-full object-cover" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.name}</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.name || user.email.split('@')[0]}</p>
               <p className="text-xs text-primary-600 dark:text-primary-400 font-medium uppercase tracking-wider truncate">
-                {user.role === 'individual' ? 'Particulier' : user.role === 'company' ? 'Entreprise' : 'Établissement'}
+                {primaryRole === 'individual' ? 'Particulier' : primaryRole === 'company' ? 'Entreprise' : 'Établissement'}
               </p>
             </div>
           </div>
@@ -435,7 +464,7 @@ export const Dashboard: React.FC = () => {
           <div className="my-6 border-t border-gray-100 dark:border-gray-700"></div>
 
           <div className="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Raccourcis</div>
-          <Link to={`/profile/${user.id}`} className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
+          <Link to={`/profile/${user._id}`} className="flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors">
             <User className="w-5 h-5 text-gray-400" /> Mon Profil Public
           </Link>
           <Link to="/premium" className="mt-2 mx-2 flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-700 dark:to-gray-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5">
@@ -451,7 +480,7 @@ export const Dashboard: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-              Bon retour, {user.name.split(' ')[0]} 👋
+              Bon retour, {(user.name || user.email).split(' ')[0]} 👋
             </h1>
             <p className="text-gray-500 dark:text-gray-400">
               Voici ce qui se passe sur votre espace aujourd'hui.
