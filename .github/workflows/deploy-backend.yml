@@ -1,0 +1,125 @@
+name: Deploy Backend to DigitalOcean
+
+on:
+  push:
+    branches: [main, production]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+
+env:
+  REGISTRY: registry.digitalocean.com
+  IMAGE_NAME: jom-backend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: test
+          MONGO_INITDB_ROOT_PASSWORD: test
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Run linter
+        working-directory: ./backend
+        run: npm run lint
+      
+      - name: Run tests
+        working-directory: ./backend
+        run: npm run test:e2e
+        env:
+          DATABASE_URL: mongodb://test:test@localhost:27017/jom-test?authSource=admin
+          JWT_SECRET: test-secret
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      
+      - name: Log in to DigitalOcean Container Registry
+        run: doctl registry login --expiry-seconds 1200
+      
+      - name: Build Docker image
+        working-directory: ./backend
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
+          docker tag ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+                     ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
+      
+      - name: Push image to DigitalOcean Container Registry
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      
+      - name: Deploy to DigitalOcean Droplet
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/jom-backend
+            
+            # Pull latest image
+            doctl registry login
+            docker pull ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
+            
+            # Run migrations
+            docker-compose run --rm app npm run migration:run
+            
+            # Seed premium quotas
+            docker-compose run --rm app npm run seed:premium-quotas
+            
+            # Restart services
+            docker-compose down
+            docker-compose up -d
+            
+            # Clean up old images
+            docker image prune -af
+      
+      - name: Notify Sentry of deployment
+        uses: getsentry/action-release@v1
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: jom-backend
+        with:
+          environment: production
+          version: ${{ github.sha }}
