@@ -9,8 +9,9 @@ export class FileUploadService implements OnModuleInit {
     private uploadDir: string;
 
     constructor(private configService: ConfigService) {
-        // Define root upload directory (relative to backend root, e.g., 'backend/uploads')
-        this.uploadDir = path.resolve(__dirname, '..', '..', '..', '..', 'uploads');
+        // Define root upload directory (priority: Env Var > Default relative path)
+        const envPath = this.configService.get<string>('UPLOAD_DIR');
+        this.uploadDir = envPath ? path.resolve(envPath) : path.resolve(__dirname, '..', '..', '..', '..', 'uploads');
     }
 
     onModuleInit() {
