@@ -1,0 +1,36 @@
+services:
+  # Frontend Service (React + Nginx)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+
+  # Backend Service (NestJS)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      # These will be overridden by .env file on server
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - PAYTECH_API_KEY=${PAYTECH_API_KEY}
+      - PAYTECH_API_SECRET=${PAYTECH_API_SECRET}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - APP_URL=${APP_URL}
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      # Persistent storage for uploads
+      - jom_uploads:/app/uploads
+    restart: always
+
+volumes:
+  jom_uploads:
