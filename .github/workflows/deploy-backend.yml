@@ -1,4 +1,4 @@
-name: Deploy Backend to DigitalOcean
+name: Deploy Backend to Hostinger (VPS)
 
 on:
   push:
@@ -8,8 +8,8 @@ on:
       - '.github/workflows/deploy-backend.yml'
 
 env:
-  REGISTRY: registry.digitalocean.com
-  IMAGE_NAME: jom-backend
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/jom-backend
 
 jobs:
   test:
@@ -52,74 +52,81 @@ jobs:
   build-and-push:
     needs: test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     
     steps:
       - uses: actions/checkout@v3
       
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
         with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Log in to DigitalOcean Container Registry
-        run: doctl registry login --expiry-seconds 1200
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha
+            type=raw,value=latest
       
-      - name: Build Docker image
+      - name: Build and push Docker image
         working-directory: ./backend
-        run: |
-          docker build -t ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} .
-          docker tag ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-                     ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
-      
-      - name: Push image to DigitalOcean Container Registry
-        run: |
-          docker push ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
     
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Install doctl
-        uses: digitalocean/action-doctl@v2
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-      
-      - name: Deploy to DigitalOcean Droplet
+      - name: Deploy to Hostinger VPS via SSH
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: ${{ secrets.vp_host }}
+          username: ${{ secrets.vps_username }}
+          key: ${{ secrets.ssh_private_key }}
           script: |
+            # Login to GitHub Container Registry
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull new image
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            
+            # Prepare directory
+            mkdir -p /opt/jom-backend
             cd /opt/jom-backend
             
-            # Pull latest image
-            doctl registry login
-            docker pull ${{ env.REGISTRY }}/${{ secrets.REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:latest
+            # Note: We assume docker-compose.yml is already on the server or we can create it here
+            # For simplicity, let's stop and run plain docker or assume docker-compose present
             
-            # Run migrations
-            docker-compose run --rm app npm run migration:run
+            # Force update service if using docker-compose
+            # docker-compose pull backend
+            # docker-compose up -d backend
             
-            # Seed premium quotas
-            docker-compose run --rm app npm run seed:premium-quotas
+            # --- SIMPLE DEPLOYMENT (Without docker-compose on server for now) ---
+            docker stop jom-backend || true
+            docker rm jom-backend || true
             
-            # Restart services
-            docker-compose down
-            docker-compose up -d
-            
-            # Clean up old images
+            docker run -d \
+              --name jom-backend \
+              --restart always \
+              -p 3000:3000 \
+              -e PORT=3000 \
+              -e MONGODB_URI="${{ secrets.MONGODB_URI }}" \
+              -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+              -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+              ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+            # Cleanup
             docker image prune -af
-      
-      - name: Notify Sentry of deployment
-        uses: getsentry/action-release@v1
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: jom-backend
-        with:
-          environment: production
-          version: ${{ github.sha }}
+
