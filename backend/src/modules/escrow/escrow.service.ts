@@ -80,11 +80,34 @@ export class EscrowService {
         const escrow = await this.escrowModel.findById(escrowId);
         if (!escrow) throw new NotFoundException('Escrow not found');
 
+        if (escrow.status === EscrowStatus.RELEASED) {
+            throw new BadRequestException('Cannot refund released funds');
+        }
+
+        if (escrow.status === EscrowStatus.REFUNDED) {
+            return escrow;
+        }
+
+        // 1. Fetch Order to identify Buyer
+        const order = await this.orderModel.findById(escrow.order);
+        if (!order) throw new NotFoundException('Linked order not found');
+
+        // 2. Refund to Buyer's Wallet
+        await this.walletService.credit(
+            order.buyer.toString(),
+            escrow.amount,
+            `Refund for Order #${order._id}`,
+            order._id.toString()
+        );
+
+        // 3. Update Statuses
         escrow.status = EscrowStatus.REFUNDED;
         escrow.refundedAt = new Date();
         await escrow.save();
 
-        // TODO: Trigger Refund Transaction logic
+        if (order.status !== 'cancelled') {
+            await this.orderModel.findByIdAndUpdate(order._id, { status: 'cancelled' });
+        }
 
         return escrow;
     }

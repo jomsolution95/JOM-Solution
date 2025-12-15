@@ -48,6 +48,5 @@ export class Invoice {
 }
 
 export const InvoiceSchema = SchemaFactory.createForClass(Invoice);
-InvoiceSchema.index({ invoiceNumber: 1 });
-InvoiceSchema.index({ buyer: 1 });
+
 InvoiceSchema.index({ seller: 1 });

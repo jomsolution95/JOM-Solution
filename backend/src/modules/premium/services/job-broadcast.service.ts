@@ -3,14 +3,18 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
+import { Job } from '../../jobs/schemas/job.schema';
+import { Post } from '../schemas/post.schema';
+import { Notification } from '../../notifications/schemas/notification.schema';
+
 @Injectable()
 export class JobBroadcastService {
     private readonly logger = new Logger(JobBroadcastService.name);
 
     constructor(
-        @InjectModel('Job') private jobModel: Model<any>,
-        @InjectModel('Post') private postModel: Model<any>,
-        @InjectModel('Notification') private notificationModel: Model<any>,
+        @InjectModel(Job.name) private jobModel: Model<any>,
+        @InjectModel(Post.name) private postModel: Model<any>,
+        @InjectModel(Notification.name) private notificationModel: Model<any>,
     ) { }
 
     /**

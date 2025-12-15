@@ -7,12 +7,14 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { SearchDto } from '../../common/dto/search.dto';
 import { CacheService } from '../../common/cache/cache.service';
+import { FileUploadService } from '../premium/services/file-upload.service';
 
 @Injectable()
 export class ProfilesService {
     constructor(
         @InjectModel(Profile.name) private profileModel: Model<ProfileDocument>,
-        private readonly cacheService: CacheService
+        private readonly cacheService: CacheService,
+        private readonly fileUploadService: FileUploadService
     ) { }
 
     async create(createProfileDto: CreateProfileDto, userId: string): Promise<Profile> {
@@ -111,5 +113,14 @@ export class ProfilesService {
 
         profile.documents.push(document);
         return profile.save();
+    }
+
+    async uploadAvatar(userId: string, file: Express.Multer.File): Promise<Profile> {
+        const uploadResult = await this.fileUploadService.uploadFile(file, 'avatars');
+        return this.profileModel.findOneAndUpdate(
+            { user: userId },
+            { avatar: uploadResult.url },
+            { new: true, upsert: true }
+        ).exec();
     }
 }

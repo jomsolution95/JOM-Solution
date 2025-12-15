@@ -39,8 +39,19 @@ export class SubscriptionService {
         transactionId?: string;
         clientSecret?: string;
     }> {
-        const amount = dto.amount || PLAN_PRICES[dto.plan];
+        let amount = dto.amount || PLAN_PRICES[dto.plan];
         const currency = dto.currency || 'XOF';
+        const billingCycle = dto.billingCycle || 'monthly';
+
+        // --- ANNUAL BILLING LOGIC ---
+        if (billingCycle === 'yearly') {
+            // Apply 20% Discount roughly by charging for 9.6 months instead of 12
+            // Or strictly: (Monthly * 12) * 0.8
+            // Let's use the strict 20% discount on the annualized price
+            amount = (PLAN_PRICES[dto.plan] * 12) * 0.8;
+            amount = Math.round(amount); // Ensure integer
+        }
+        // ----------------------------
 
         // Check if user already has active subscription
         const existingSubscription = await this.premiumService.getActiveSubscription(userId);
@@ -50,23 +61,26 @@ export class SubscriptionService {
 
         let result: any = {};
 
+        // Pass billingCycle to process modules
+        const metadata = { billingCycle };
+
         switch (dto.paymentMethod) {
             case PaymentMethod.STRIPE:
-                result = await this.processStripePayment(userId, dto.plan, amount, currency, dto.paymentToken);
+                result = await this.processStripePayment(userId, dto.plan, amount, currency, dto.paymentToken, metadata);
                 break;
 
             case PaymentMethod.WAVE:
                 if (!dto.phoneNumber) {
                     throw new BadRequestException('Phone number required for Wave payment');
                 }
-                result = await this.processWavePayment(userId, dto.plan, amount, currency, dto.phoneNumber);
+                result = await this.processWavePayment(userId, dto.plan, amount, currency, dto.phoneNumber, metadata);
                 break;
 
             case PaymentMethod.ORANGE_MONEY:
                 if (!dto.phoneNumber) {
                     throw new BadRequestException('Phone number required for Orange Money payment');
                 }
-                result = await this.processOrangeMoneyPayment(userId, dto.plan, amount, currency, dto.phoneNumber);
+                result = await this.processOrangeMoneyPayment(userId, dto.plan, amount, currency, dto.phoneNumber, metadata);
                 break;
 
             default:
@@ -85,16 +99,19 @@ export class SubscriptionService {
         amount: number,
         currency: string,
         paymentToken?: string,
+        metadata?: any
     ): Promise<any> {
         const paymentIntent = await this.stripeService.createPaymentIntent(amount, currency, {
             userId: userId.toString(),
             plan,
+            ...metadata
         });
 
         // Create pending subscription
         const subscription = await this.createSubscription(userId, plan, amount, currency, 'pending', {
             paymentIntentId: paymentIntent.id,
             paymentMethod: PaymentMethod.STRIPE,
+            ...metadata
         });
 
         return {
@@ -113,16 +130,19 @@ export class SubscriptionService {
         amount: number,
         currency: string,
         phoneNumber: string,
+        metadata?: any
     ): Promise<any> {
         const payment = await this.waveService.initiatePayment(amount, currency, phoneNumber, {
             userId: userId.toString(),
             plan,
+            ...metadata
         });
 
         // Create pending subscription
         const subscription = await this.createSubscription(userId, plan, amount, currency, 'pending', {
             transactionId: payment.transactionId,
             paymentMethod: PaymentMethod.WAVE,
+            ...metadata
         });
 
         return {
@@ -141,16 +161,19 @@ export class SubscriptionService {
         amount: number,
         currency: string,
         phoneNumber: string,
+        metadata?: any
     ): Promise<any> {
         const payment = await this.orangeMoneyService.initiatePayment(amount, currency, phoneNumber, {
             userId: userId.toString(),
             plan,
+            ...metadata
         });
 
         // Create pending subscription
         const subscription = await this.createSubscription(userId, plan, amount, currency, 'pending', {
             transactionId: payment.transactionId,
             paymentMethod: PaymentMethod.ORANGE_MONEY,
+            ...metadata
         });
 
         return {
@@ -173,12 +196,20 @@ export class SubscriptionService {
     ): Promise<SubscriptionDocument> {
         const now = new Date();
         const endDate = new Date(now);
-        endDate.setMonth(endDate.getMonth() + 1); // 1 month subscription
+
+        const billingCycle = metadata?.billingCycle || 'monthly';
+
+        if (billingCycle === 'yearly') {
+            endDate.setFullYear(endDate.getFullYear() + 1); // 1 year
+        } else {
+            endDate.setMonth(endDate.getMonth() + 1); // 1 month
+        }
 
         const subscription = new this.subscriptionModel({
             userId: new Types.ObjectId(userId),
             plan,
             status,
+            billingCycle,
             startDate: now,
             endDate,
             price: amount,
@@ -277,5 +308,37 @@ export class SubscriptionService {
         subscription.autoRenew = false;
 
         return await subscription.save();
+    }
+
+    /**
+     * Create a 30-day Free Trial Subscription
+     */
+    async createTrialSubscription(
+        userId: string | Types.ObjectId,
+        plan: SubscriptionPlan,
+    ): Promise<SubscriptionDocument> {
+        const now = new Date();
+        const endDate = new Date(now);
+        endDate.setDate(endDate.getDate() + 30); // 30 days trial
+
+        const subscription = new this.subscriptionModel({
+            userId: new Types.ObjectId(userId),
+            plan,
+            status: SubscriptionStatus.TRIAL,
+            startDate: now,
+            endDate,
+            price: 0,
+            currency: 'XOF', // Default
+            autoRenew: false,
+            quotasUsed: {},
+            paymentHistory: [],
+        });
+
+        const savedSub = await subscription.save();
+
+        // Initialize quotas immediately so they can use the trial
+        await this.premiumService.initializeQuotas(userId, plan);
+
+        return savedSub;
     }
 }

@@ -45,10 +45,38 @@ export class User {
 
     @Prop({ default: null })
     deletedAt?: Date;
+
+    @Prop({ required: false })
+    provider?: string; // 'google', 'facebook', 'linkedin'
+
+    @Prop({ required: false })
+    providerId?: string;
+
+    // --- KYC Fields ---
+    @Prop({ enum: ['NONE', 'PENDING', 'APPROVED', 'REJECTED'], default: 'NONE' })
+    kycStatus!: string;
+
+    @Prop({ type: [String], default: [] })
+    kycDocuments?: string[];
+
+    @Prop({ required: false })
+    kycRejectionReason?: string;
+
+    @Prop({ type: Object, default: {} })
+    socialLinks?: {
+        linkedin?: string;
+        github?: string;
+        twitter?: string;
+        website?: string;
+    };
+
+    @Prop({ select: false })
+    resetPasswordToken?: string;
+
+    @Prop({ select: false })
+    resetPasswordExpires?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-// Indexes
-UserSchema.index({ email: 1 });
-UserSchema.index({ role: 1 });
+

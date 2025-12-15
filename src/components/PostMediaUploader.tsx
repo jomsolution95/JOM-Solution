@@ -29,7 +29,7 @@ export const PostMediaUploader: React.FC<PostMediaUploaderProps> = ({
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         // Check max files
         if (mediaFiles.length + acceptedFiles.length > maxFiles) {
-            toast.error(`Maximum ${maxFiles} files allowed`);
+            toast.error(`Maximum ${maxFiles} fichiers autorisés`);
             return;
         }
 
@@ -38,7 +38,7 @@ export const PostMediaUploader: React.FC<PostMediaUploaderProps> = ({
 
         for (const file of acceptedFiles) {
             if (!isImage(file) && !isVideo(file)) {
-                toast.error(`${file.name} is not an image or video`);
+                toast.error(`${file.name} n'est pas une image ou une vidéo`);
                 continue;
             }
 
@@ -95,7 +95,7 @@ export const PostMediaUploader: React.FC<PostMediaUploaderProps> = ({
                             : f
                     )
                 );
-                toast.error(`Failed to upload ${mediaFile.file.name}`);
+                toast.error(`Échec du téléchargement de ${mediaFile.file.name}`);
                 return null;
             }
         });
@@ -165,7 +165,7 @@ export const PostMediaUploader: React.FC<PostMediaUploaderProps> = ({
                         {/* Error State */}
                         {media.error && (
                             <div className="absolute inset-0 bg-red-500 bg-opacity-60 flex items-center justify-center">
-                                <p className="text-white text-sm font-medium">Failed</p>
+                                <p className="text-white text-sm font-medium">Échec</p>
                             </div>
                         )}
 
@@ -186,14 +186,14 @@ export const PostMediaUploader: React.FC<PostMediaUploaderProps> = ({
                     <div
                         {...getRootProps()}
                         className={`aspect-square rounded-xl border-2 border-dashed cursor-pointer transition-all flex flex-col items-center justify-center ${isDragActive
-                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10'
-                                : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500'
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/10'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 dark:hover:border-primary-500'
                             }`}
                     >
                         <input {...getInputProps()} />
                         <Plus className="w-8 h-8 text-gray-400 mb-2" />
                         <p className="text-xs text-gray-500 dark:text-gray-400 text-center px-2">
-                            {isDragActive ? 'Drop here' : 'Add media'}
+                            {isDragActive ? 'Déposez ici' : 'Ajouter un média'}
                         </p>
                     </div>
                 )}
@@ -202,7 +202,7 @@ export const PostMediaUploader: React.FC<PostMediaUploaderProps> = ({
             {/* Info */}
             {mediaFiles.length > 0 && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                    {mediaFiles.length} / {maxFiles} files
+                    {mediaFiles.length} / {maxFiles} fichiers
                 </p>
             )}
         </div>

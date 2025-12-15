@@ -9,7 +9,7 @@ async function bootstrap() {
 
   // Security Middlewares
   app.use(helmet());
-  app.use(mongoSanitize());
+  // app.use(mongoSanitize());
 
   // CORS Configuration
   app.enableCors({

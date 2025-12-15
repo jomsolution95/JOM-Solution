@@ -133,7 +133,7 @@ export const Navbar: React.FC = () => {
 
           {/* CENTER: Global Search (Desktop only) */}
           <div className="hidden lg:flex flex-1 max-w-xl mx-4">
-            <GlobalSearch placeholder="Search users, jobs, services..." className="w-full" />
+            <GlobalSearch placeholder="Rechercher..." className="w-full" />
           </div>
 
           {/* RIGHT: Actions & Profile */}

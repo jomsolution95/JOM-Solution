@@ -23,7 +23,7 @@ export const AtsOptimizer: React.FC<AtsOptimizerProps> = ({ isOpen, onClose }) =
             const content = JSON.stringify({ personalInfo, experiences });
 
             const data = await aiApi.analyzeCv({
-                jobTitle: jobTitle || 'General',
+                jobTitle: jobTitle || 'Général',
                 cvContent: content,
                 skills: skillNames
             });

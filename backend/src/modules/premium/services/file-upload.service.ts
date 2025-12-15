@@ -11,7 +11,8 @@ export class FileUploadService implements OnModuleInit {
     constructor(private configService: ConfigService) {
         // Define root upload directory (priority: Env Var > Default relative path)
         const envPath = this.configService.get<string>('UPLOAD_DIR');
-        this.uploadDir = envPath ? path.resolve(envPath) : path.resolve(__dirname, '..', '..', '..', '..', 'uploads');
+        // Use process.cwd() to be consistent between src and dist
+        this.uploadDir = envPath ? path.resolve(envPath) : path.join(process.cwd(), 'uploads');
     }
 
     onModuleInit() {
@@ -46,7 +47,7 @@ export class FileUploadService implements OnModuleInit {
 
             // Construct Public URL
             // Format: APP_URL/uploads/folder/filename
-            const appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3000';
+            const appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3005';
             // We use posix style paths for URLs
             const urlPath = path.posix.join('uploads', folder, filename);
             const publicUrl = `${appUrl}/${urlPath}`;

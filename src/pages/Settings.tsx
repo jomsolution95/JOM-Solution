@@ -11,9 +11,9 @@ export const Settings: React.FC = () => {
     const [activeTab, setActiveTab] = useState<Tab>('profile');
 
     const tabs = [
-        { id: 'profile' as Tab, label: 'Profile', icon: User },
-        { id: 'security' as Tab, label: 'Security', icon: Shield },
-        { id: 'privacy' as Tab, label: 'Data & Privacy', icon: Database },
+        { id: 'profile' as Tab, label: 'Profil', icon: User },
+        { id: 'security' as Tab, label: 'Sécurité', icon: Shield },
+        { id: 'privacy' as Tab, label: 'Données & Confidentialité', icon: Database },
     ];
 
     return (
@@ -24,11 +24,11 @@ export const Settings: React.FC = () => {
                     <div className="flex items-center gap-3 mb-2">
                         <SettingsIcon className="w-8 h-8 text-primary-600" />
                         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                            Account Settings
+                            Paramètres du Compte
                         </h1>
                     </div>
                     <p className="text-gray-600 dark:text-gray-400">
-                        Manage your profile, security, and privacy settings
+                        Gérez vos paramètres de profil, de sécurité et de confidentialité
                     </p>
                 </div>
 
@@ -42,8 +42,8 @@ export const Settings: React.FC = () => {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors whitespace-nowrap ${activeTab === tab.id
-                                            ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600'
-                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                        ? 'text-primary-600 dark:text-primary-400 border-b-2 border-primary-600'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                                         }`}
                                 >
                                     <Icon className="w-5 h-5" />

@@ -409,4 +409,15 @@ export class CourseService {
             avgProgress: Math.round(avgProgress),
         };
     }
+
+    /**
+     * Get all students enrolled in institution's courses
+     */
+    async getInstitutionStudents(institutionId: string | Types.ObjectId): Promise<StudentProgressDocument[]> {
+        return this.progressModel
+            .find({ institutionId: new Types.ObjectId(institutionId) })
+            .populate('studentId', 'name email avatar')
+            .populate('courseId', 'title')
+            .sort({ enrolledAt: -1 });
+    }
 }

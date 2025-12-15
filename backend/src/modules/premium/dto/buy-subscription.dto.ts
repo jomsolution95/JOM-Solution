@@ -33,6 +33,10 @@ export class BuySubscriptionDto {
     @IsOptional()
     @IsString()
     currency?: string;
+
+    @IsOptional()
+    @IsString()
+    billingCycle?: 'monthly' | 'yearly';
 }
 
 export class VerifyPaymentDto {

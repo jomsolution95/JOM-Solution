@@ -1,28 +1,54 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 import { Notification, NotificationDocument, NotificationType } from './schemas/notification.schema';
 import { PaginationDto } from '../../common/dto/pagination.dto';
+import { NotificationsGateway } from './notifications.gateway';
+import { EmailService } from './email.service';
+import { User } from '../users/schemas/user.schema';
 
 @Injectable()
 export class NotificationsService {
     constructor(
         @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
-        @InjectQueue('notifications') private notificationsQueue: Queue,
+        @InjectModel('User') private userModel: Model<any>,
+        private readonly notificationsGateway: NotificationsGateway,
+        private readonly emailService: EmailService,
     ) { }
 
     async send(userId: string, type: NotificationType, title: string, message: string, link?: string) {
-        // Add to Queue
-        await this.notificationsQueue.add('sendKey', {
-            userId,
+        // 1. Save to Database
+        const notification = new this.notificationModel({
+            recipient: userId,
             type,
             title,
             message,
             link,
         });
-        return { status: 'queued' };
+        await notification.save();
+
+        // 2. Emit Real-time
+        this.notificationsGateway.emitNotification(userId, notification);
+
+        // 3. Send Email (Best Effort)
+        this.sendEmailSafely(userId, title, message, link);
+
+        return { status: 'sent', notificationId: notification._id };
+    }
+
+    private async sendEmailSafely(userId: string, title: string, message: string, link?: string) {
+        try {
+            const user = await this.userModel.findById(userId);
+            if (user && user.email) {
+                await this.emailService.sendEmail(
+                    user.email,
+                    `JOM Platform: ${title}`,
+                    `<p>${message}</p>${link ? `<a href="${link}">Voir détails</a>` : ''}`
+                );
+            }
+        } catch (error) {
+            console.error('Failed to send email notification:', error);
+        }
     }
 
     async findAll(userId: string, paginationDto: PaginationDto) {

@@ -2,13 +2,19 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GenerateSummaryDto } from './dto/generate-summary.dto';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { ChatMessage, ChatMessageDocument } from './schemas/chat-message.schema';
 
 @Injectable()
 export class AiService {
     private genAI: GoogleGenerativeAI;
     private modelName = 'gemini-1.5-flash';
 
-    constructor(private configService: ConfigService) {
+    constructor(
+        private configService: ConfigService,
+        @InjectModel(ChatMessage.name) private chatModel: Model<ChatMessageDocument>
+    ) {
         // Use provided key as fallback or env var 'GEMINI_API_KEY'
         const apiKey = this.configService.get<string>('GEMINI_API_KEY') || 'AIzaSyA9gXHlH58fMwe-6z7MnbdyEkAaDcFGRAk';
         if (apiKey) {
@@ -61,7 +67,10 @@ export class AiService {
 
             const result = await model.generateContent(prompt);
             const response = await result.response;
-            const text = response.text();
+            let text = response.text();
+
+            // Cleanup Markdown if present (```json ... ```)
+            text = text.replace(/```json/g, '').replace(/```/g, '').trim();
 
             return JSON.parse(text);
 
@@ -98,5 +107,137 @@ export class AiService {
             missingKeywords,
             improvements: ["Ajoutez davantage de mots-clés techniques.", "Quantifiez vos résultats."]
         };
+    }
+    // --- ADMIN COPILOT ---
+
+    async adminChat(question: string, context: any = {}): Promise<{ answer: string; toolUsed?: string, toolResult?: any }> {
+        if (!this.genAI) {
+            return { answer: "Je suis en mode simulation (Pas de clé API). Je ne peux pas interroger la base de données réelle." };
+        }
+
+        try {
+            const model = this.genAI.getGenerativeModel({ model: this.modelName });
+
+            // 1. Tool Selection Step
+            // We explain capabilities to the AI and ask if it needs data
+            const toolPrompt = `
+            You are an Admin Assistant for JOM Academy.
+            User Question: "${question}"
+            
+            Available Tools:
+            - get_global_stats: Returns total users, jobs, courses. Use for "stats", "overview", "chiffres".
+            - search_user: Returns dummy user data. Use for "find user", "search".
+            - none: If the question is general or greeting.
+
+            Response JSON format ONLY: { "tool": "get_global_stats" | "search_user" | "none", "params": {} }
+            `;
+
+            const toolResult = await model.generateContent(toolPrompt);
+            let toolJsonString = toolResult.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+            let toolData = { tool: 'none', params: {} };
+
+            try {
+                toolData = JSON.parse(toolJsonString);
+            } catch (e) {
+                console.error("AI Tool Parse Error", e);
+            }
+
+            // 2. Execute Tool (Mocked for now until connected to UsersService)
+            let data = null;
+            if (toolData.tool === 'get_global_stats') {
+                data = { users: 1543, active_jobs: 42, applications: 128, revenue_mtd: "450,000 FCFA" };
+            } else if (toolData.tool === 'search_user') {
+                data = { name: "Test User", email: "test@jom.com", role: "Particulier", subscription: "Free" };
+            }
+
+            // 3. Generate Final Answer
+            const finalPrompt = `
+            Context: You are talking to a Super Admin.
+            User Question: "${question}"
+            Tool Used: ${toolData.tool}
+            Data Retrieved: ${JSON.stringify(data)}
+
+            Task: Answer the user's question naturally based on the Data Retrieved. If no data, answer generally.
+            Keep it professional and concise.
+            `;
+
+            const finalResult = await model.generateContent(finalPrompt);
+            return {
+                answer: finalResult.response.text(),
+                toolUsed: toolData.tool !== 'none' ? toolData.tool : undefined,
+                toolResult: data
+            };
+
+        } catch (error) {
+            console.error('Admin Chat Error:', error);
+            return {
+                answer: "Désolé, une erreur est survenue lors du traitement de votre demande."     // --- POST-AUDIT: USER CONCIERGE ---
+    
+    async chatWithHistory(userId: string, userMessage: string): Promise<string> {
+                    if (!this.genAI) return "Je suis en mode simulation (Pas de clé API).";
+
+                    try {
+                        const model = this.genAI.getGenerativeModel({ model: this.modelName });
+
+                        // 1. Fetch History (Last 10 messages)
+                        const history = await this.chatModel.find({ userId })
+                            .sort({ createdAt: -1 })
+                            .limit(10)
+                            .lean(); // Optimize read
+
+                        // Reverse to chronological order for the AI
+                        const chatHistory = history.reverse().map(msg => ({
+                            role: msg.role === 'user' ? 'user' : 'model',
+                            parts: [{ text: msg.content }]
+                        }));
+
+                        // 2. Start Chat Session with Context
+                        const chat = model.startChat({
+                            history: [
+                                {
+                                    role: "user",
+                                    parts: [{
+                                        text: `
+                            System Prompt: You are the AI Assistant for JOM Academy, a platform connecting talents (users) and companies (recruiters) in Africa.
+                            
+                            Your Goal: Help the user with any question about the platform.
+                            - If they ask about Jobs, explain we have a Job Board.
+                            - If they ask about learning, explain our Academy/Courses.
+                            - Be helpful, polite, and concise.
+                            - Always answer in the language the user speaks (French/English).
+                        `}]
+                                },
+                                {
+                                    role: "model",
+                                    parts: [{ text: "Understood. I am ready to help the JOM Academy user." }]
+                                },
+                                ...chatHistory as any[]
+                            ]
+                        });
+
+                        // 3. Send Message
+                        const result = await chat.sendMessage(userMessage);
+                        const responseText = result.response.text();
+
+                        // 4. Async Save History (Non-blocking preference, but here we await for safety)
+                        await this.chatModel.create([
+                            { userId, role: 'user', content: userMessage },
+                            { userId, role: 'assistant', content: responseText }
+                        ]);
+
+                        return responseText;
+
+                    } catch (error) {
+                        console.error('Chat History Error:', error);
+                        // Fallback save even on error? No, just return error.
+                        return "Désolé, j'ai eu un problème de connexion. Réessayez plus tard.";
+                    }
+                }
+
+    async getHistory(userId: string) {
+                    return this.chatModel.find({ userId }).sort({ createdAt: 1 }).limit(50);
+                }
+            };
+        }
     }
 }

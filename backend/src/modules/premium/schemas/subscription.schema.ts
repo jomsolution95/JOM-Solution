@@ -45,6 +45,9 @@ export class Subscription {
     @Prop({ required: true, enum: Object.values(SubscriptionStatus), default: SubscriptionStatus.TRIAL })
     status!: SubscriptionStatus;
 
+    @Prop({ required: true, enum: ['monthly', 'yearly'], default: 'monthly' })
+    billingCycle!: 'monthly' | 'yearly';
+
     @Prop({ required: true })
     startDate!: Date;
 

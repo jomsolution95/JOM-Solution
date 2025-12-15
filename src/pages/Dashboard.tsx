@@ -9,7 +9,7 @@ import {
 import {
   DollarSign, Users, ShoppingBag, Briefcase, Settings, CreditCard,
   FileText, GraduationCap, Heart, Crown, TrendingUp, Calendar, MessageSquare,
-  User, LayoutDashboard, ArrowUpRight, Plus, ChevronRight, Clock, Search, Zap, CheckCircle2, Star, Video
+  User, LayoutDashboard, ArrowUpRight, Plus, ChevronRight, Clock, Search, Zap, CheckCircle2, Star, Video, Rocket
 } from 'lucide-react';
 
 // --- DESIGN COMPONENTS ---
@@ -271,10 +271,10 @@ const EtablissementDashboard = () => {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <QuickAction icon={Plus} label="Nouveau Cours" to="/formations" color="bg-indigo-500" />
-        <QuickAction icon={Users} label="Gérer Étudiants" to="/my-items" color="bg-blue-500" />
-        <QuickAction icon={Video} label="Classe Virtuelle" to="/messages" color="bg-red-500" />
-        <QuickAction icon={FileText} label="Certifications" to="/settings" color="bg-yellow-500" />
+        <QuickAction icon={Plus} label="Nouveau Cours" to="/formations/create" color="bg-indigo-500" />
+        <QuickAction icon={Users} label="Gérer Étudiants" to="/academy/students" color="bg-blue-500" />
+        <QuickAction icon={Rocket} label="Marketing" to="/academy/marketing" color="bg-purple-500" />
+        <QuickAction icon={FileText} label="Certifications" to="/academy/certificates" color="bg-yellow-500" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

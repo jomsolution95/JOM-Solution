@@ -7,16 +7,16 @@ import { PostMediaUploader } from '../components/PostMediaUploader';
 import { toast } from 'react-toastify';
 
 const categories = [
-    'Web Development',
-    'Mobile Development',
+    'Développement Web',
+    'Développement Mobile',
     'Design',
-    'Writing',
+    'Rédaction',
     'Marketing',
-    'Video & Animation',
-    'Music & Audio',
+    'Vidéo & Animation',
+    'Musique & Audio',
     'Business',
     'Data',
-    'Photography',
+    'Photographie',
 ];
 
 export const CreateService: React.FC = () => {
@@ -38,11 +38,11 @@ export const CreateService: React.FC = () => {
         mutationFn: (data: any) => servicesApi.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['services'] });
-            toast.success('Service created successfully!');
+            toast.success('Service créé avec succès !');
             navigate('/my-items');
         },
         onError: () => {
-            toast.error('Failed to create service');
+            toast.error('Échec de la création du service');
         },
     });
 
@@ -50,7 +50,7 @@ export const CreateService: React.FC = () => {
         e.preventDefault();
 
         if (images.length === 0) {
-            toast.error('Please add at least one image');
+            toast.error('Veuillez ajouter au moins une image');
             return;
         }
 
@@ -71,10 +71,10 @@ export const CreateService: React.FC = () => {
             <div className="max-w-4xl mx-auto px-4">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                        Create New Service
+                        Créer un nouveau service
                     </h1>
                     <p className="text-gray-600 dark:text-gray-400">
-                        List your service on the marketplace
+                        Proposez votre service sur la marketplace
                     </p>
                 </div>
 
@@ -82,19 +82,19 @@ export const CreateService: React.FC = () => {
                     {/* Basic Info */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                            Basic Information
+                            Informations de base
                         </h2>
 
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Service Title *
+                                    Titre du service *
                                 </label>
                                 <input
                                     type="text"
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    placeholder="I will create a professional website"
+                                    placeholder="Je vais créer un site web professionnel"
                                     className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                     required
                                 />
@@ -102,7 +102,7 @@ export const CreateService: React.FC = () => {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Category *
+                                    Catégorie *
                                 </label>
                                 <select
                                     value={formData.category}
@@ -110,7 +110,7 @@ export const CreateService: React.FC = () => {
                                     className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                                     required
                                 >
-                                    <option value="">Select a category</option>
+                                    <option value="">Sélectionner une catégorie</option>
                                     {categories.map((cat) => (
                                         <option key={cat} value={cat}>
                                             {cat}
@@ -127,7 +127,7 @@ export const CreateService: React.FC = () => {
                                     value={formData.description}
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     rows={6}
-                                    placeholder="Describe your service in detail..."
+                                    placeholder="Décrivez votre service en détail..."
                                     className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                                     required
                                 />
@@ -136,7 +136,7 @@ export const CreateService: React.FC = () => {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Price (FCFA) *
+                                        Prix (FCFA) *
                                     </label>
                                     <input
                                         type="number"
@@ -151,7 +151,7 @@ export const CreateService: React.FC = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Delivery Time (days) *
+                                        Délai de livraison (jours) *
                                     </label>
                                     <input
                                         type="number"
@@ -167,7 +167,7 @@ export const CreateService: React.FC = () => {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Tags (comma-separated)
+                                    Tags (séparés par des virgules)
                                 </label>
                                 <input
                                     type="text"
@@ -183,14 +183,14 @@ export const CreateService: React.FC = () => {
                     {/* Images */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
-                            Service Images *
+                            Images du service *
                         </h2>
                         <PostMediaUploader
                             onMediaChange={setImages}
                             maxFiles={5}
                         />
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                            Add up to 5 images showcasing your service
+                            Ajoutez jusqu'à 5 images pour présenter votre service
                         </p>
                     </div>
 
@@ -201,7 +201,7 @@ export const CreateService: React.FC = () => {
                             onClick={() => navigate(-1)}
                             className="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold rounded-lg transition-colors"
                         >
-                            Cancel
+                            Annuler
                         </button>
                         <button
                             type="submit"
@@ -211,12 +211,12 @@ export const CreateService: React.FC = () => {
                             {createMutation.isPending ? (
                                 <>
                                     <Loader className="w-5 h-5 animate-spin" />
-                                    Creating...
+                                    Création...
                                 </>
                             ) : (
                                 <>
                                     <Save className="w-5 h-5" />
-                                    Create Service
+                                    Créer le service
                                 </>
                             )}
                         </button>

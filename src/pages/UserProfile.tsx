@@ -20,12 +20,13 @@ export const UserProfile: React.FC = () => {
       setProfile(mockProfiles[userId]);
     } else {
       // Default fallback for unknown users (like the logged in user '123')
+      const isCurrentUser = currentUser?._id === userId || currentUser?.id === userId;
       setProfile({
         id: userId || 'unknown',
-        name: currentUser?.id === userId ? currentUser.name : 'Utilisateur JOM',
-        role: currentUser?.id === userId ? currentUser.role : 'individual',
-        avatar: currentUser?.id === userId ? currentUser.avatar : `https://ui-avatars.com/api/?name=User+${userId}`,
-        headline: currentUser?.id === userId ? (currentUser.role === 'company' ? 'Entreprise' : 'Membre de la communauté') : 'Membre JOM Solution',
+        name: isCurrentUser ? currentUser?.name : 'Utilisateur JOM',
+        role: isCurrentUser ? (currentUser?.roles?.[0] || currentUser?.role || 'individual') : 'individual',
+        avatar: isCurrentUser ? currentUser?.avatar : `https://ui-avatars.com/api/?name=User+${userId}`,
+        headline: isCurrentUser ? (currentUser?.roles?.includes('company') ? 'Entreprise' : 'Membre de la communauté') : 'Membre JOM Solution',
         location: 'Sénégal',
         about: 'Profil utilisateur standard.',
         experience: [],
@@ -80,7 +81,7 @@ export const UserProfile: React.FC = () => {
                   alt={profile.name}
                   className="w-32 h-32 rounded-full border-4 border-white dark:border-gray-800 bg-white object-cover shadow-md"
                 />
-                {currentUser?.id !== profile.id && (
+                {currentUser?._id !== profile.id && currentUser?.id !== profile.id && (
                   <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
                 )}
               </div>
@@ -101,7 +102,7 @@ export const UserProfile: React.FC = () => {
               </div>
 
               <div className="flex gap-3 mt-4 md:mt-4">
-                {currentUser?.id !== profile.id ? (
+                {currentUser?._id !== profile.id && currentUser?.id !== profile.id ? (
                   <>
                     <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-1.5 rounded-full font-bold transition-colors flex items-center gap-2">
                       <Plus className="w-5 h-5" /> Suivre
@@ -111,7 +112,10 @@ export const UserProfile: React.FC = () => {
                     </button>
                   </>
                 ) : (
-                  <button className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white px-6 py-1.5 rounded-full font-bold transition-colors">
+                  <button
+                    onClick={() => navigate('/settings')}
+                    className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white px-6 py-1.5 rounded-full font-bold transition-colors"
+                  >
                     Modifier le profil
                   </button>
                 )}

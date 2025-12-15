@@ -3,10 +3,12 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { CvService } from './cv.service';
 import { CvController } from './cv.controller';
 import { Cv, CvSchema } from './schemas/cv.schema';
+import { PremiumModule } from '../premium/premium.module';
 
 @Module({
     imports: [
         MongooseModule.forFeature([{ name: Cv.name, schema: CvSchema }]),
+        PremiumModule
     ],
     controllers: [CvController],
     providers: [CvService],

@@ -14,17 +14,22 @@ import { Subscription, SubscriptionSchema } from './schemas/subscription.schema'
 import { PremiumQuota, PremiumQuotaSchema } from './schemas/premiumQuotas.schema';
 import { Boost, BoostSchema } from './schemas/boosts.schema';
 import { ProfileView, ProfileViewSchema } from './schemas/profileViews.schema';
+import { CertificateTemplate, CertificateTemplateSchema } from './schemas/certificateTemplate.schema';
 import { Certificate, CertificateSchema } from './schemas/certificates.schema';
 import { Training, TrainingSchema } from './schemas/training.schema';
 import { TrainingContent, TrainingContentSchema } from './schemas/trainingContent.schema';
 import { StudentProgress, StudentProgressSchema } from './schemas/studentProgress.schema';
 import { FavoriteProfile, FavoriteProfileSchema } from './schemas/favoriteProfile.schema';
 import { RecruitmentPack, RecruitmentPackSchema } from './schemas/recruitmentPack.schema';
+import { Job, JobSchema } from '../jobs/schemas/job.schema';
+import { Post, PostSchema } from './schemas/post.schema';
+import { Notification, NotificationSchema } from '../notifications/schemas/notification.schema';
 import { BoostController } from './boost.controller';
 import { CVthequeController } from './cvtheque.controller';
 import { StatsController } from './stats.controller';
 import { AcademyController } from './academy.controller';
 import { CertificateController } from './certificate.controller';
+import { CertificateTemplateController } from './certificate-template.controller';
 import { JobBroadcastController } from './job-broadcast.controller';
 import { RecruitmentPackController } from './recruitment-pack.controller';
 import { BoostService } from './services/boost.service';
@@ -34,7 +39,8 @@ import { CourseService } from './services/course.service';
 import { FileUploadService } from './services/file-upload.service';
 import { CertificateService } from './services/certificate.service';
 import { JobBroadcastService } from './services/job-broadcast.service';
-import { RecruitmentPackService } from './services/recruitment-pack.service';
+import { MarketingController } from './marketing.controller';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
     imports: [
@@ -45,12 +51,17 @@ import { RecruitmentPackService } from './services/recruitment-pack.service';
             { name: Boost.name, schema: BoostSchema },
             { name: ProfileView.name, schema: ProfileViewSchema },
             { name: Certificate.name, schema: CertificateSchema },
+            { name: CertificateTemplate.name, schema: CertificateTemplateSchema }, // Added
             { name: Training.name, schema: TrainingSchema },
             { name: TrainingContent.name, schema: TrainingContentSchema },
             { name: StudentProgress.name, schema: StudentProgressSchema },
             { name: FavoriteProfile.name, schema: FavoriteProfileSchema },
             { name: RecruitmentPack.name, schema: RecruitmentPackSchema },
+            { name: Job.name, schema: JobSchema },
+            { name: Post.name, schema: PostSchema },
+            { name: Notification.name, schema: NotificationSchema },
         ]),
+        NotificationsModule,
     ],
     controllers: [
         PremiumController,
@@ -60,7 +71,9 @@ import { RecruitmentPackService } from './services/recruitment-pack.service';
         StatsController,
         AcademyController,
         CertificateController,
+        CertificateTemplateController, // Added
         JobBroadcastController,
+        MarketingController,
     ],
     providers: [
         PremiumService,
@@ -79,6 +92,6 @@ import { RecruitmentPackService } from './services/recruitment-pack.service';
         PayTechService,
         PremiumGuard,
     ],
-    exports: [PremiumService, SubscriptionService, BoostService, CVthequeService, StatsService, CourseService, CertificateService, PremiumGuard],
+    exports: [PremiumService, SubscriptionService, BoostService, CVthequeService, StatsService, CourseService, CertificateService, PremiumGuard, FileUploadService],
 })
 export class PremiumModule { }

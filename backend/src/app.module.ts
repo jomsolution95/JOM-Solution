@@ -29,6 +29,7 @@ import { PremiumModule } from './modules/premium/premium.module';
 import { HealthModule } from './modules/health/health.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { AdsModule } from './modules/ads/ads.module';
+import { CouponsModule } from './modules/admin/coupons.module';
 import { LoggingInterceptor } from './common/logger/logging.interceptor';
 import { CvModule } from './modules/cv/cv.module';
 import { AiModule } from './modules/ai/ai.module';
@@ -40,7 +41,7 @@ import { AiModule } from './modules/ai/ai.module';
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
+      rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
     }),
     ScheduleModule.forRoot(),
@@ -51,16 +52,18 @@ import { AiModule } from './modules/ai/ai.module';
       }),
       inject: [ConfigService],
     }),
-    BullModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        connection: {
-          host: configService.get('REDIS_HOST', 'localhost'),
-          port: configService.get('REDIS_PORT', 6379),
-        },
-      }),
-      inject: [ConfigService],
-    }),
+    /*
+        BullModule.forRootAsync({
+          imports: [ConfigModule],
+          useFactory: async (configService: ConfigService) => ({
+            connection: {
+              host: configService.get('REDIS_HOST', 'localhost'),
+              port: configService.get('REDIS_PORT', 6379),
+            },
+          }),
+          inject: [ConfigService],
+        }),
+    */
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 10,
@@ -85,6 +88,7 @@ import { AiModule } from './modules/ai/ai.module';
     MetricsModule,
 
     AdsModule,
+    CouponsModule,
     CvModule,
     AiModule,
   ],

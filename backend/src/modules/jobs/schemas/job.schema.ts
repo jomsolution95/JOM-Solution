@@ -68,5 +68,5 @@ export class Job {
 
 export const JobSchema = SchemaFactory.createForClass(Job);
 JobSchema.index({ title: 'text', description: 'text' });
-JobSchema.index({ status: 1 });
-JobSchema.index({ employer: 1 });
+JobSchema.index({ title: 'text', description: 'text' });
+

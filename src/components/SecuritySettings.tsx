@@ -21,12 +21,12 @@ export const SecuritySettings: React.FC = () => {
         e.preventDefault();
 
         if (passwordData.newPassword !== passwordData.confirmPassword) {
-            toast.error('Passwords do not match');
+            toast.error('Les mots de passe ne correspondent pas');
             return;
         }
 
         if (passwordData.newPassword.length < 8) {
-            toast.error('Password must be at least 8 characters');
+            toast.error('Le mot de passe doit contenir au moins 8 caractères');
             return;
         }
 
@@ -38,14 +38,14 @@ export const SecuritySettings: React.FC = () => {
                 newPassword: passwordData.newPassword,
             });
 
-            toast.success('Password changed successfully!');
+            toast.success('Mot de passe modifié avec succès !');
             setPasswordData({
                 currentPassword: '',
                 newPassword: '',
                 confirmPassword: '',
             });
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to change password');
+            toast.error(error.response?.data?.message || 'Échec du changement de mot de passe');
         } finally {
             setIsChangingPassword(false);
         }
@@ -57,9 +57,9 @@ export const SecuritySettings: React.FC = () => {
         try {
             const response = await api.post('/auth/2fa/enable');
             setQrCode(response.data.qrCode);
-            toast.info('Scan the QR code with your authenticator app');
+            toast.info('Scannez le code QR avec votre application d\'authentification');
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to enable 2FA');
+            toast.error(error.response?.data?.message || 'Échec de l\'activation de la 2FA');
         } finally {
             setIsLoading2FA(false);
         }
@@ -76,25 +76,25 @@ export const SecuritySettings: React.FC = () => {
             setIs2FAEnabled(true);
             setQrCode('');
             setVerificationCode('');
-            toast.success('2FA enabled successfully!');
+            toast.success('2FA activée avec succès !');
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Invalid verification code');
+            toast.error(error.response?.data?.message || 'Code de vérification invalide');
         } finally {
             setIsLoading2FA(false);
         }
     };
 
     const handleDisable2FA = async () => {
-        if (!confirm('Are you sure you want to disable 2FA?')) return;
+        if (!confirm('Êtes-vous sûr de vouloir désactiver la 2FA ?')) return;
 
         setIsLoading2FA(true);
 
         try {
             await api.post('/auth/2fa/disable');
             setIs2FAEnabled(false);
-            toast.success('2FA disabled successfully');
+            toast.success('2FA désactivée avec succès');
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to disable 2FA');
+            toast.error(error.response?.data?.message || 'Échec de la désactivation de la 2FA');
         } finally {
             setIsLoading2FA(false);
         }
@@ -109,15 +109,15 @@ export const SecuritySettings: React.FC = () => {
                         <Lock className="w-5 h-5 text-primary-600" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Change Password</h2>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Update your password regularly for security</p>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Changer le mot de passe</h2>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Mettez à jour votre mot de passe régulièrement pour plus de sécurité</p>
                     </div>
                 </div>
 
                 <form onSubmit={handlePasswordChange} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Current Password
+                            Mot de passe actuel
                         </label>
                         <input
                             type="password"
@@ -130,7 +130,7 @@ export const SecuritySettings: React.FC = () => {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            New Password
+                            Nouveau mot de passe
                         </label>
                         <input
                             type="password"
@@ -141,13 +141,13 @@ export const SecuritySettings: React.FC = () => {
                             minLength={8}
                         />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            At least 8 characters
+                            Au moins 8 caractères
                         </p>
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Confirm New Password
+                            Confirmer le nouveau mot de passe
                         </label>
                         <input
                             type="password"
@@ -166,12 +166,12 @@ export const SecuritySettings: React.FC = () => {
                         {isChangingPassword ? (
                             <>
                                 <Loader className="w-5 h-5 animate-spin" />
-                                Changing...
+                                Modification...
                             </>
                         ) : (
                             <>
                                 <Key className="w-5 h-5" />
-                                Change Password
+                                Changer le mot de passe
                             </>
                         )}
                     </button>
@@ -185,13 +185,13 @@ export const SecuritySettings: React.FC = () => {
                         <Shield className="w-5 h-5 text-green-600" />
                     </div>
                     <div className="flex-1">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Two-Factor Authentication</h2>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Add an extra layer of security to your account</p>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Authentification à deux facteurs</h2>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Ajoutez une couche de sécurité supplémentaire à votre compte</p>
                     </div>
                     {is2FAEnabled && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-sm font-medium">
                             <CheckCircle className="w-4 h-4" />
-                            Enabled
+                            Activé
                         </div>
                     )}
                 </div>
@@ -199,7 +199,7 @@ export const SecuritySettings: React.FC = () => {
                 {!is2FAEnabled && !qrCode && (
                     <div>
                         <p className="text-gray-600 dark:text-gray-400 mb-4">
-                            Enable 2FA to secure your account with an authenticator app like Google Authenticator or Authy.
+                            Activez la 2FA pour sécuriser votre compte avec une application comme Google Authenticator.
                         </p>
                         <button
                             onClick={handleEnable2FA}
@@ -209,12 +209,12 @@ export const SecuritySettings: React.FC = () => {
                             {isLoading2FA ? (
                                 <>
                                     <Loader className="w-5 h-5 animate-spin" />
-                                    Loading...
+                                    Chargement...
                                 </>
                             ) : (
                                 <>
                                     <Shield className="w-5 h-5" />
-                                    Enable 2FA
+                                    Activer la 2FA
                                 </>
                             )}
                         </button>
@@ -225,20 +225,20 @@ export const SecuritySettings: React.FC = () => {
                     <div className="space-y-4">
                         <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 text-center">
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                Scan this QR code with your authenticator app
+                                Scannez ce code QR avec votre application d'authentification
                             </p>
                             <img src={qrCode} alt="2FA QR Code" className="mx-auto w-48 h-48" />
                         </div>
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Verification Code
+                                Code de vérification
                             </label>
                             <input
                                 type="text"
                                 value={verificationCode}
                                 onChange={(e) => setVerificationCode(e.target.value)}
-                                placeholder="Enter 6-digit code"
+                                placeholder="Entrez le code à 6 chiffres"
                                 maxLength={6}
                                 className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent text-center text-2xl tracking-widest font-mono"
                             />
@@ -252,12 +252,12 @@ export const SecuritySettings: React.FC = () => {
                             {isLoading2FA ? (
                                 <>
                                     <Loader className="w-5 h-5 animate-spin" />
-                                    Verifying...
+                                    Vérification...
                                 </>
                             ) : (
                                 <>
                                     <CheckCircle className="w-5 h-5" />
-                                    Verify & Enable
+                                    Vérifier et Activer
                                 </>
                             )}
                         </button>
@@ -273,10 +273,10 @@ export const SecuritySettings: React.FC = () => {
                         {isLoading2FA ? (
                             <>
                                 <Loader className="w-5 h-5 animate-spin" />
-                                Disabling...
+                                Désactivation...
                             </>
                         ) : (
-                            'Disable 2FA'
+                            'Désactiver la 2FA'
                         )}
                     </button>
                 )}

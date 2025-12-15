@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { CreditCard, Smartphone, Check, Crown, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -58,14 +58,29 @@ const PLANS: Record<string, Plan> = {
 type PaymentMethod = 'stripe' | 'wave' | 'orange_money';
 
 export const PremiumCheckout: React.FC = () => {
+    const { state } = useLocation();
     const navigate = useNavigate();
     const { user } = useAuth();
-    const [selectedPlan, setSelectedPlan] = useState<string>('company-biz');
+
+    // Get state from navigation (with defaults)
+    const initialPlanId = state?.selectedPlanId || 'company-biz';
+    const initialBillingCycle = state?.billingCycle || 'monthly';
+
+    const [selectedPlan, setSelectedPlan] = useState<string>(initialPlanId);
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(initialBillingCycle);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wave');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [loading, setLoading] = useState(false);
 
     const plan = PLANS[selectedPlan];
+
+    // Calculate price based on Billing Cycle
+    const getFinalPrice = () => {
+        if (billingCycle === 'yearly') {
+            return Math.round(plan.price * 12 * 0.8);
+        }
+        return plan.price;
+    };
 
     const handleCheckout = async () => {
         if (!user) {
@@ -82,12 +97,13 @@ export const PremiumCheckout: React.FC = () => {
         setLoading(true);
 
         try {
-            const response = await api.post('/premium/buy', {
+            const response = await api.post('/premium/sub/buy', {
                 plan: selectedPlan,
                 paymentMethod,
                 phoneNumber: paymentMethod !== 'stripe' ? phoneNumber : undefined,
-                amount: plan.price,
+                amount: getFinalPrice(),
                 currency: 'XOF',
+                billingCycle, // Send this to backend
             });
 
             if (response.data.paymentUrl) {
@@ -95,7 +111,7 @@ export const PremiumCheckout: React.FC = () => {
                 window.location.href = response.data.paymentUrl;
             } else if (response.data.clientSecret) {
                 // Handle Stripe payment
-                toast.info('Redirection vers le paiement Stripe...');
+                toast.info('Paiement par carte bientôt disponible. Veuillez utiliser Wave ou Orange Money.');
                 // TODO: Integrate Stripe Elements
             } else {
                 toast.success('Abonnement créé avec succès !');
@@ -132,6 +148,35 @@ export const PremiumCheckout: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Plan Selection */}
                     <div className="lg:col-span-2 space-y-6">
+                        {/* Billing Toggle (In Checkout too) */}
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 flex justify-center">
+                            <div className="relative inline-flex bg-gray-100 dark:bg-gray-700 rounded-full p-1 cursor-pointer">
+                                <div className="absolute -top-3 -right-3">
+                                    <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-bounce">
+                                        -20%
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => setBillingCycle('monthly')}
+                                    className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${billingCycle === 'monthly'
+                                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                        : 'text-gray-500 dark:text-gray-400'
+                                        }`}
+                                >
+                                    Mensuel
+                                </button>
+                                <button
+                                    onClick={() => setBillingCycle('yearly')}
+                                    className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${billingCycle === 'yearly'
+                                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                        : 'text-gray-500 dark:text-gray-400'
+                                        }`}
+                                >
+                                    Annuel
+                                </button>
+                            </div>
+                        </div>
+
                         {/* Plans */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
                             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
@@ -143,8 +188,8 @@ export const PremiumCheckout: React.FC = () => {
                                         key={p.id}
                                         onClick={() => setSelectedPlan(p.id)}
                                         className={`w-full text-left p-4 rounded-xl border-2 transition-all ${selectedPlan === p.id
-                                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
+                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
                                             }`}
                                     >
                                         <div className="flex items-center justify-between">
@@ -158,14 +203,23 @@ export const PremiumCheckout: React.FC = () => {
                                                     )}
                                                 </h3>
                                                 <p className="text-2xl font-bold text-primary-600 dark:text-primary-400 mt-1">
-                                                    {p.price.toLocaleString()} FCFA
-                                                    <span className="text-sm text-gray-500 font-normal">/mois</span>
+                                                    {billingCycle === 'yearly'
+                                                        ? (Math.round(p.price * 12 * 0.8)).toLocaleString()
+                                                        : p.price.toLocaleString()} FCFA
+                                                    <span className="text-sm text-gray-500 font-normal">
+                                                        /{billingCycle === 'yearly' ? 'an' : 'mois'}
+                                                    </span>
                                                 </p>
+                                                {billingCycle === 'yearly' && (
+                                                    <p className="text-xs text-green-600 font-bold">
+                                                        Économie : {(p.price * 12 * 0.2).toLocaleString()} FCFA
+                                                    </p>
+                                                )}
                                             </div>
                                             <div
                                                 className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedPlan === p.id
-                                                        ? 'border-primary-500 bg-primary-500'
-                                                        : 'border-gray-300'
+                                                    ? 'border-primary-500 bg-primary-500'
+                                                    : 'border-gray-300'
                                                     }`}
                                             >
                                                 {selectedPlan === p.id && <Check className="w-4 h-4 text-white" />}
@@ -186,8 +240,8 @@ export const PremiumCheckout: React.FC = () => {
                                 <button
                                     onClick={() => setPaymentMethod('wave')}
                                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${paymentMethod === 'wave'
-                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
+                                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
                                         }`}
                                 >
                                     <div className="flex items-center gap-3">
@@ -198,8 +252,8 @@ export const PremiumCheckout: React.FC = () => {
                                         </div>
                                         <div
                                             className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'wave'
-                                                    ? 'border-primary-500 bg-primary-500'
-                                                    : 'border-gray-300'
+                                                ? 'border-primary-500 bg-primary-500'
+                                                : 'border-gray-300'
                                                 }`}
                                         >
                                             {paymentMethod === 'wave' && <Check className="w-4 h-4 text-white" />}
@@ -211,8 +265,8 @@ export const PremiumCheckout: React.FC = () => {
                                 <button
                                     onClick={() => setPaymentMethod('orange_money')}
                                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${paymentMethod === 'orange_money'
-                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
+                                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
                                         }`}
                                 >
                                     <div className="flex items-center gap-3">
@@ -223,8 +277,8 @@ export const PremiumCheckout: React.FC = () => {
                                         </div>
                                         <div
                                             className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'orange_money'
-                                                    ? 'border-primary-500 bg-primary-500'
-                                                    : 'border-gray-300'
+                                                ? 'border-primary-500 bg-primary-500'
+                                                : 'border-gray-300'
                                                 }`}
                                         >
                                             {paymentMethod === 'orange_money' && <Check className="w-4 h-4 text-white" />}
@@ -236,8 +290,8 @@ export const PremiumCheckout: React.FC = () => {
                                 <button
                                     onClick={() => setPaymentMethod('stripe')}
                                     className={`w-full text-left p-4 rounded-xl border-2 transition-all ${paymentMethod === 'stripe'
-                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
+                                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
                                         }`}
                                 >
                                     <div className="flex items-center gap-3">
@@ -250,8 +304,8 @@ export const PremiumCheckout: React.FC = () => {
                                         </div>
                                         <div
                                             className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'stripe'
-                                                    ? 'border-primary-500 bg-primary-500'
-                                                    : 'border-gray-300'
+                                                ? 'border-primary-500 bg-primary-500'
+                                                : 'border-gray-300'
                                                 }`}
                                         >
                                             {paymentMethod === 'stripe' && <Check className="w-4 h-4 text-white" />}
@@ -289,6 +343,9 @@ export const PremiumCheckout: React.FC = () => {
                                 <div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">Plan sélectionné</p>
                                     <p className="font-bold text-gray-900 dark:text-white">{plan.name}</p>
+                                    <p className="text-xs text-primary-600 font-bold uppercase">
+                                        {billingCycle === 'yearly' ? 'Facturation Annuelle' : 'Facturation Mensuelle'}
+                                    </p>
                                 </div>
 
                                 <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
@@ -309,42 +366,42 @@ export const PremiumCheckout: React.FC = () => {
                                     <div className="flex justify-between items-center mb-2">
                                         <span className="text-gray-600 dark:text-gray-400">Sous-total</span>
                                         <span className="font-medium text-gray-900 dark:text-white">
-                                            {plan.price.toLocaleString()} FCFA
+                                            {getFinalPrice().toLocaleString()} FCFA
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center text-lg font-bold">
                                         <span className="text-gray-900 dark:text-white">Total</span>
                                         <span className="text-primary-600 dark:text-primary-400">
-                                            {plan.price.toLocaleString()} FCFA
+                                            {getFinalPrice().toLocaleString()} FCFA
                                         </span>
                                     </div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                        Facturation mensuelle, sans engagement
+                                        {billingCycle === 'yearly' ? 'Facturé une fois par an' : 'Facturation mensuelle, sans engagement'}
                                     </p>
                                 </div>
+
+                                <button
+                                    onClick={handleCheckout}
+                                    disabled={loading}
+                                    className="w-full py-4 bg-gradient-to-r from-primary-600 to-secondary-600 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                            Traitement...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Crown className="w-5 h-5" />
+                                            Souscrire maintenant
+                                        </>
+                                    )}
+                                </button>
+
+                                <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
+                                    Paiement 100% sécurisé. Vos données sont protégées.
+                                </p>
                             </div>
-
-                            <button
-                                onClick={handleCheckout}
-                                disabled={loading}
-                                className="w-full py-4 bg-gradient-to-r from-primary-600 to-secondary-600 text-white font-bold rounded-xl hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {loading ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                        Traitement...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Crown className="w-5 h-5" />
-                                        Souscrire maintenant
-                                    </>
-                                )}
-                            </button>
-
-                            <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
-                                Paiement 100% sécurisé. Vos données sont protégées.
-                            </p>
                         </div>
                     </div>
                 </div>

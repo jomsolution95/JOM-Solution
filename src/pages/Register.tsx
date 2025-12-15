@@ -74,7 +74,7 @@ const roleFields: Record<UserRole, FieldConfig[]> = {
 };
 
 export const Register: React.FC = () => {
-  const { login, isLoading } = useAuth();
+  const { register, login, isLoading } = useAuth(); // Create register from AuthContext
   const navigate = useNavigate();
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -94,8 +94,14 @@ export const Register: React.FC = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    if (type === 'file') {
+      const fileInput = e.target as HTMLInputElement;
+      const file = fileInput.files?.[0];
+      setFormData(prev => ({ ...prev, [name]: file }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -105,13 +111,38 @@ export const Register: React.FC = () => {
       return;
     }
     if (selectedRole && acceptTerms) {
-      let displayName = '';
-      if (selectedRole === 'individual') displayName = `${formData.firstName} ${formData.lastName}`;
-      else if (selectedRole === 'company') displayName = formData.companyName;
-      else if (selectedRole === 'etablissement') displayName = formData.schoolName;
+      if (!register) {
+        console.error("Register function missing in AuthContext");
+        return;
+      }
 
-      await login(selectedRole, displayName);
-      navigate('/reseaux');
+      try {
+        // 1. Register User
+        await register(formData.email, formData.password, selectedRole);
+
+        // 2. Upload File if present
+        const fileField = selectedRole === 'individual' ? 'avatar' : 'logo';
+        const file = formData[fileField];
+
+        if (file instanceof File) {
+          const token = localStorage.getItem('access_token');
+          const uploadData = new FormData();
+          uploadData.append('file', file);
+
+          await fetch(`${import.meta.env.VITE_API_URL}/profiles/avatar`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: uploadData
+          });
+        }
+
+        navigate('/reseaux');
+      } catch (error) {
+        console.error("Registration error", error);
+        // Toast is handled in AuthContext usually
+      }
     }
   };
 
@@ -164,13 +195,20 @@ export const Register: React.FC = () => {
             value={formData[field.name] || ''}
           />
         ) : field.type === 'file' ? (
-          <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 text-center hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all cursor-pointer group">
+          <label className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-6 text-center hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all cursor-pointer group block">
             <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
               <Upload className="w-6 h-6 text-gray-400 group-hover:text-primary-500" />
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{field.placeholder || "Cliquez pour uploader"}</p>
-            <input type="file" className="hidden" name={field.name} />
-          </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 font-medium pb-1">{field.placeholder || "Cliquez pour uploader"}</p>
+            {formData[field.name] && <p className="text-xs text-primary-600 font-bold">{(formData[field.name] as File).name}</p>}
+            <input
+              type="file"
+              className="hidden"
+              name={field.name}
+              onChange={handleChange}
+              accept="image/*"
+            />
+          </label>
         ) : (
           <div className="relative">
             <input

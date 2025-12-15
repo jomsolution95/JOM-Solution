@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const AUTH_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const AUTH_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 /**
  * Refresh the access token using the refresh token

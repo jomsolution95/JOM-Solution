@@ -6,7 +6,7 @@ import { sanitizeObject } from '../utils/security';
 
 // Create axios instance with default config
 const apiClient: AxiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
     timeout: 30000, // 30 seconds default
     headers: {
         'Content-Type': 'application/json',

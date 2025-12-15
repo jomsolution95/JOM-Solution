@@ -124,6 +124,8 @@ export const Premium: React.FC = () => {
     const [viewMode, setViewMode] = useState<'subscription' | 'ondemand'>('subscription');
     const [activeTabRole, setActiveTabRole] = useState<UserRole>(user?.role || 'company');
 
+    const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+
     // Determine current active role context
     const currentRole = user ? user.role : activeTabRole;
 
@@ -133,13 +135,32 @@ export const Premium: React.FC = () => {
     // Get boosts for current role (fallback to company if undefined)
     const currentBoosts = BOOSTS_BY_ROLE[currentRole as keyof typeof BOOSTS_BY_ROLE] || BOOSTS_BY_ROLE.company;
 
+    const getPrice = (basePrice: number) => {
+        if (billingCycle === 'yearly') {
+            // Apply 20% discount on the total
+            // Monthly equivalent = (Price * 12 * 0.8) / 12 = Price * 0.8
+            return Math.round(basePrice * 0.8);
+        }
+        return basePrice;
+    };
+
+    const handleSubscribe = () => {
+        if (!displayPlan) return;
+        navigate('/premium/checkout', {
+            state: {
+                selectedPlanId: displayPlan.id,
+                billingCycle
+            }
+        });
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
                 <BackButton label="Retour" />
 
                 {/* Header */}
-                <div className="text-center mb-12">
+                <div className="text-center mb-8">
                     <div className="inline-flex items-center gap-2 bg-gradient-to-r from-primary-500/10 to-secondary-500/10 border border-primary-200 dark:border-primary-800 rounded-full px-4 py-1 mb-4">
                         <span className="flex h-2 w-2 rounded-full bg-primary-500 animate-pulse"></span>
                         <span className="text-xs font-bold text-primary-700 dark:text-primary-300 uppercase tracking-wider">Solutions Business & Carrière</span>
@@ -170,8 +191,9 @@ export const Premium: React.FC = () => {
                     </div>
                 )}
 
-                {/* Toggle Mode */}
-                <div className="flex justify-center mb-12">
+                {/* Mode Toggles */}
+                <div className="flex flex-col items-center gap-6 mb-12">
+                    {/* View Mode (SaaS / OnDemand) */}
                     <div className="bg-white dark:bg-gray-800 p-1.5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm inline-flex">
                         <button
                             onClick={() => setViewMode('subscription')}
@@ -191,6 +213,35 @@ export const Premium: React.FC = () => {
                         >
                             <Target className="w-4 h-4" /> À la carte & Pubs
                         </button>
+                    </div>
+
+                    {/* Billing Cycle Toggle (Only for Subscription) */}
+                    <div className={`transition-opacity duration-300 ${viewMode === 'subscription' ? 'opacity-100' : 'opacity-0 pointer-events-none h-0'}`}>
+                        <div className="relative inline-flex bg-gray-100 dark:bg-gray-700 rounded-full p-1 cursor-pointer">
+                            <div className="absolute -top-3 -right-3">
+                                <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-bounce">
+                                    -20%
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => setBillingCycle('monthly')}
+                                className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${billingCycle === 'monthly'
+                                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                    : 'text-gray-500 dark:text-gray-400'
+                                    }`}
+                            >
+                                Mensuel
+                            </button>
+                            <button
+                                onClick={() => setBillingCycle('yearly')}
+                                className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${billingCycle === 'yearly'
+                                    ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                    : 'text-gray-500 dark:text-gray-400'
+                                    }`}
+                            >
+                                Annuel
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -215,10 +266,22 @@ export const Premium: React.FC = () => {
                                         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{displayPlan.name}</h3>
                                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">{displayPlan.description}</p>
 
-                                        <div className="mb-8">
-                                            <span className="text-5xl font-extrabold text-gray-900 dark:text-white">{displayPlan.price.toLocaleString()}</span>
+                                        <div className="mb-8 relative">
+                                            {billingCycle === 'yearly' && (
+                                                <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-xs text-green-500 font-bold">
+                                                    Économisez {(displayPlan.price * 12 * 0.2).toLocaleString()} F/an
+                                                </span>
+                                            )}
+                                            <span className="text-5xl font-extrabold text-gray-900 dark:text-white">
+                                                {getPrice(displayPlan.price).toLocaleString()}
+                                            </span>
                                             <span className="text-gray-500 font-medium"> FCFA</span>
-                                            <span className="block text-sm text-gray-400 mt-1">{displayPlan.period}, sans engagement</span>
+                                            <span className="block text-sm text-gray-400 mt-1">
+                                                /mois {billingCycle === 'yearly' && '(facturé annuellement)'}
+                                            </span>
+                                            <span className="block text-xs text-gray-400 mt-1">
+                                                sans engagement
+                                            </span>
                                         </div>
                                     </div>
 
@@ -241,8 +304,11 @@ export const Premium: React.FC = () => {
                                         </div>
 
                                         <div className="mt-auto pt-6 border-t border-gray-100 dark:border-gray-700">
-                                            <button className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-transform hover:-translate-y-1 bg-gradient-to-r ${displayPlan.color}`}>
-                                                Commencer l'essai gratuit (7 jours)
+                                            <button
+                                                onClick={handleSubscribe}
+                                                className={`w-full py-4 rounded-xl font-bold text-white shadow-lg transition-transform hover:-translate-y-1 bg-gradient-to-r ${displayPlan.color}`}
+                                            >
+                                                Choisir ce plan
                                             </button>
                                             <p className="text-center text-xs text-gray-400 mt-3">Paiement sécurisé via Wave, Orange Money ou Carte Bancaire</p>
                                         </div>

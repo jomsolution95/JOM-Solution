@@ -59,6 +59,12 @@ export class Training {
 
     @Prop({ type: Object })
     metadata?: any;
+
+    @Prop({ default: false })
+    isFeatured?: boolean;
+
+    @Prop()
+    featuredExpiresAt?: Date;
 }
 
 export const TrainingSchema = SchemaFactory.createForClass(Training);

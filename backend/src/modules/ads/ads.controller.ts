@@ -26,7 +26,8 @@ export class AdsController {
     @Post('campaigns')
     @UseGuards(AccessTokenGuard)
     async createCampaign(@Request() req: any, @Body() dto: CreateCampaignDto) {
-        const campaign = await this.adsService.createCampaign(req.user.userId, dto);
+        console.log('AdsController req.user:', req.user); // DEBUG
+        const campaign = await this.adsService.createCampaign(req.user.sub, dto);
         return { campaign };
     }
 
@@ -36,7 +37,7 @@ export class AdsController {
     @Get('campaigns')
     @UseGuards(AccessTokenGuard)
     async getMyCampaigns(@Request() req: any) {
-        const campaigns = await this.adsService.getAdvertiserCampaigns(req.user.userId);
+        const campaigns = await this.adsService.getAdvertiserCampaigns(req.user.sub);
         return { campaigns };
     }
 
@@ -138,7 +139,7 @@ export class AdsController {
     @Get('stats')
     @UseGuards(AccessTokenGuard)
     async getStats(@Request() req: any) {
-        const stats = await this.adsService.getAdvertiserStats(req.user.userId);
+        const stats = await this.adsService.getAdvertiserStats(req.user.sub);
         return { stats };
     }
 }

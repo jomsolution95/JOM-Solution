@@ -2,16 +2,28 @@
 export type UserRole = 'admin' | 'individual' | 'company' | 'etablissement' | 'institution';
 
 export interface User {
-  id: string;
+  _id: string; // MongoDB ID
+  id?: string; // Frontend alias
   name: string;
   email: string;
-  role: UserRole;
+  roles: string[]; // Standardized on array
+  role?: UserRole; // Legacy/Single role support
+  isVerified?: boolean;
+  createdAt?: string;
   avatar?: string;
   banner?: string;
-  headline?: string; // Added for profile summary
+  headline?: string;
   location?: string;
+  phone?: string;
+  bio?: string;
   about?: string;
   website?: string;
+  socialLinks?: {
+    linkedin?: string;
+    github?: string;
+    twitter?: string;
+    website?: string;
+  };
 }
 
 export interface Service {

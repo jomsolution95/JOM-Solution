@@ -36,9 +36,9 @@ export const fetchAndMapProfileToCV = async (): Promise<AutoFillResult> => {
             email: user.email || '',
             phone: profile.phone || '',
             address: profile.location || '',
-            website: profile.website || '',
-            linkedin: '', // TODO: Add social links to Profile schema/UI if not present
-            github: '',
+            website: profile.website || profile.socialLinks?.website || '',
+            linkedin: profile.socialLinks?.linkedin || '',
+            github: profile.socialLinks?.github || '',
             avatar: profile.avatarUrl || user.avatar || '',
         };
 

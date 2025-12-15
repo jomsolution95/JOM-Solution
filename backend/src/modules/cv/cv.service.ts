@@ -4,12 +4,25 @@ import { Model } from 'mongoose';
 import { Cv, CvDocument } from './schemas/cv.schema';
 import { CreateCvDto } from './dto/create-cv.dto';
 import { UpdateCvDto } from './dto/update-cv.dto';
+import { PremiumService } from '../premium/premium.service';
 
 @Injectable()
 export class CvService {
-    constructor(@InjectModel(Cv.name) private cvModel: Model<CvDocument>) { }
+    constructor(
+        @InjectModel(Cv.name) private cvModel: Model<CvDocument>,
+        private premiumService: PremiumService
+    ) { }
 
     async create(userId: string, createCvDto: CreateCvDto): Promise<Cv> {
+        // Freemium Check
+        const hasPremium = await this.premiumService.hasActiveSubscription(userId);
+        if (!hasPremium) {
+            const count = await this.cvModel.countDocuments({ userId });
+            if (count >= 1) {
+                throw new ForbiddenException('Le plan Gratuit est limité à 1 CV. Passez Premium pour en créer plusieurs !');
+            }
+        }
+
         const newCv = new this.cvModel({
             userId,
             ...createCvDto,

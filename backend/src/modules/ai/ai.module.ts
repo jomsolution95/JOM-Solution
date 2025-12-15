@@ -1,9 +1,12 @@
-import { Module } from '@nestjs/common';
-import { AiController } from './ai.controller';
-import { AiService } from './ai.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ChatMessage, ChatMessageSchema } from './schemas/chat-message.schema';
+import { AiSchedulerService } from './ai.scheduler.service';
 
 @Module({
+    imports: [
+        MongooseModule.forFeature([{ name: ChatMessage.name, schema: ChatMessageSchema }])
+    ],
     controllers: [AiController],
-    providers: [AiService],
+    providers: [AiService, AiSchedulerService],
 })
 export class AiModule { }

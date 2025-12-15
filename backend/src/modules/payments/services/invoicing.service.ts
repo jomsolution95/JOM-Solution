@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const PDFDocument = require('pdfkit');
 import * as fs from 'fs';
 import * as path from 'path';
@@ -37,7 +38,8 @@ export class InvoicingService {
                 unitPrice: order.amount,
             }];
             const subtotal = order.amount;
-            const fees = 0; // TODO: Implement fee logic if needed (e.g. 10%)
+            const feePercentage = 0.10; // 10% Platform Fee
+            const fees = Math.round(subtotal * feePercentage);
             const total = subtotal + fees;
 
             // 3. Create PDF

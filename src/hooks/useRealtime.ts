@@ -20,7 +20,7 @@ interface UseRealtimeReturn {
     disconnect: () => void;
 }
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000';
 
 export const useRealtime = (options: UseRealtimeOptions = {}): UseRealtimeReturn => {
     const { autoConnect = true, onConnect, onDisconnect, onError } = options;

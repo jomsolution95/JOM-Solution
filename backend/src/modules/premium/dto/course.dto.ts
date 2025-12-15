@@ -6,6 +6,7 @@ export enum ContentType {
     PDF = 'pdf',
     QUIZ = 'quiz',
     TEXT = 'text',
+    LIVE_SESSION = 'live_session',
 }
 
 export class QuizQuestionDto {

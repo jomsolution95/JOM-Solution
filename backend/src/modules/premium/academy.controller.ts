@@ -183,4 +183,13 @@ export class AcademyController {
         const stats = await this.courseService.getCourseStats(id);
         return { stats };
     }
+
+    /**
+     * Get all institution students
+     */
+    @Get('students')
+    async getInstitutionStudents(@Request() req: any) {
+        const students = await this.courseService.getInstitutionStudents(req.user.userId);
+        return { students };
+    }
 }

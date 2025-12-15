@@ -3,16 +3,7 @@ import { login as apiLogin, logout as apiLogout, getCurrentUser, isAuthenticated
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-interface User {
-  _id: string;
-  email: string;
-  roles: string[];
-  isVerified: boolean;
-  createdAt: string;
-  // Added fields to match Dashboard usage (assuming backend provides them or we mock)
-  name?: string;
-  avatar?: string;
-}
+import { User } from '../types';
 
 interface AuthContextType {
   user: User | null;
@@ -21,6 +12,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, role: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (data: Partial<User>) => void;
   hasRole: (role: string) => boolean;
   hasAnyRole: (roles: string[]) => boolean;
 }
@@ -112,6 +104,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateUser = (data: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...data };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   const hasRole = (role: string): boolean => {
     return user?.roles?.includes(role) || false;
   };
@@ -127,6 +127,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    updateUser,
     hasRole,
     hasAnyRole,
   };

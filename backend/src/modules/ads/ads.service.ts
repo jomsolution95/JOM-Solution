@@ -46,6 +46,16 @@ export class AdsService {
     }
 
     /**
+     * Get all campaigns (Admin)
+     */
+    async getAllCampaigns(status?: string): Promise<AdCampaignDocument[]> {
+        const query = status ? { status } : {};
+        return this.campaignModel.find(query)
+            .populate('advertiserId', 'email')
+            .sort({ createdAt: -1 });
+    }
+
+    /**
      * Get single campaign
      */
     async getCampaign(campaignId: string | Types.ObjectId): Promise<AdCampaignDocument> {

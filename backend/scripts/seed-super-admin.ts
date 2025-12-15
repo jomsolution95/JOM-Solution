@@ -20,15 +20,20 @@ async function bootstrap() {
         // Check if exists
         const existing = await userModel.findOne({ email: superAdminEmail });
         if (existing) {
-            logger.warn(`Super Admin ${superAdminEmail} already exists.`);
+            logger.warn(`Super Admin ${superAdminEmail} already exists. Updating credentials & roles...`);
+
+            const salt = await bcrypt.genSalt();
+            const passwordHash = await bcrypt.hash(password, salt);
+
+            existing.passwordHash = passwordHash;
 
             // Optional: Update roles if needed to ensure he has SUPER_ADMIN
             if (!existing.roles.includes(UserRole.SUPER_ADMIN)) {
-                logger.log('Updating roles to include SUPER_ADMIN...');
                 existing.roles.push(UserRole.SUPER_ADMIN);
-                await existing.save();
-                logger.log('Roles updated.');
             }
+
+            await existing.save();
+            logger.log('✅ Super Admin credentials updated successfully!');
             return;
         }
 

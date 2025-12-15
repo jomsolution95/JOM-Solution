@@ -20,7 +20,7 @@ export class Wallet {
 }
 
 export const WalletSchema = SchemaFactory.createForClass(Wallet);
-WalletSchema.index({ user: 1 });
+
 
 export type WalletTransactionDocument = WalletTransaction & Document;
 

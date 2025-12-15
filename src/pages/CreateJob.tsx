@@ -215,7 +215,7 @@ export const CreateJob: React.FC = () => {
 
                             <ul className="space-y-3 mb-6 text-sm text-gray-600 dark:text-gray-400">
                                 <li className="flex justify-between">
-                                    <span>Status</span>
+                                    <span>Statut</span>
                                     <span className="font-medium text-green-600 dark:text-green-400">Actif</span>
                                 </li>
                                 <li className="flex justify-between">

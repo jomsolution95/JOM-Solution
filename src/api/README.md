@@ -27,7 +27,7 @@ npm install axios react-toastify
 Create `.env` file in the project root:
 
 ```env
-VITE_API_URL=http://localhost:3001/api
+VITE_API_URL=http://localhost:3000/api
 ```
 
 For production:

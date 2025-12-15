@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards, Query, Req, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, Query, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import { ProfilesService } from './profiles.service';
 import { CreateProfileDto } from './dto/create-profile.dto';
@@ -49,5 +50,12 @@ export class ProfilesController {
     @UseGuards(AccessTokenGuard)
     addDocument(@GetUser('sub') userId: string, @Body() document: { name: string; url: string; type: string; date: Date }) {
         return this.profilesService.addDocument(userId, document);
+    }
+
+    @Post('avatar')
+    @UseGuards(AccessTokenGuard)
+    @UseInterceptors(FileInterceptor('file'))
+    async uploadAvatar(@GetUser('sub') userId: string, @UploadedFile() file: Express.Multer.File) {
+        return this.profilesService.uploadAvatar(userId, file);
     }
 }
