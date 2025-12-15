@@ -180,7 +180,12 @@ export class AiService {
         } catch (error) {
             console.error('Admin Chat Error:', error);
             return {
-                answer: "Désolé, une erreur est survenue lors du traitement de votre demande."     // --- POST-AUDIT: USER CONCIERGE ---
+                answer: "Désolé, une erreur est survenue lors du traitement de votre demande."
+            };
+        }
+    }
+
+    // --- POST-AUDIT: USER CONCIERGE ---
 
     /**
      * Handles User Chat with Persistent History.
@@ -190,30 +195,21 @@ export class AiService {
      * @returns The AI's response string.
      */
     async chatWithHistory(userId: string, userMessage: string): Promise<string> {
-                    if (!this.genAI) return "Je suis en mode simulation (Pas de clé API).";
-
-                    try {
-                        const model = this.genAI.getGenerativeModel({ model: this.modelName });
-
-                        // 1. Fetch History (Last 10 messages)
-                        const history = await this.chatModel.find({ userId })
-                            .sort({ createdAt: -1 })
-                            .limit(10)
                             .lean(); // Optimize read
 
-                        // Reverse to chronological order for the AI
-                        const chatHistory = history.reverse().map(msg => ({
-                            role: msg.role === 'user' ? 'user' : 'model',
-                            parts: [{ text: msg.content }]
-                        }));
+        // Reverse to chronological order for the AI
+        const chatHistory = history.reverse().map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'model',
+            parts: [{ text: msg.content }]
+        }));
 
-                        // 2. Start Chat Session with Context
-                        const chat = model.startChat({
-                            history: [
-                                {
-                                    role: "user",
-                                    parts: [{
-                                        text: `
+        // 2. Start Chat Session with Context
+        const chat = model.startChat({
+            history: [
+                {
+                    role: "user",
+                    parts: [{
+                        text: `
                             System Prompt: You are the AI Assistant for JOM Academy, a platform connecting talents (users) and companies (recruiters) in Africa.
                             
                             Your Goal: Help the user with any question about the platform.
@@ -222,38 +218,90 @@ export class AiService {
                             - Be helpful, polite, and concise.
                             - Always answer in the language the user speaks (French/English).
                         `}]
-                                },
-                                {
-                                    role: "model",
-                                    parts: [{ text: "Understood. I am ready to help the JOM Academy user." }]
-                                },
-                                ...chatHistory as any[]
-                            ]
-                        });
+                },
+                {
+                    role: "model",
+                    parts: [{ text: "Understood. I am ready to help the JOM Academy user." }]
+                },
+                ...chatHistory as any[]
+            ]
+        });
 
-                        // 3. Send Message
-                        const result = await chat.sendMessage(userMessage);
-                        const responseText = result.response.text();
+        // 3. Send Message
+        const result = await chat.sendMessage(userMessage);
+        const responseText = result.response.text();
 
-                        // 4. Async Save History (Non-blocking preference, but here we await for safety)
-                        await this.chatModel.create([
-                            { userId, role: 'user', content: userMessage },
-                            { userId, role: 'assistant', content: responseText }
-                        ]);
+        // 4. Async Save History (Non-blocking preference, but here we await for safety)
+        await this.chatModel.create([
+            { userId, role: 'user', content: userMessage },
+            { userId, role: 'assistant', content: responseText }
+        ]);
 
-                        return responseText;
+        return responseText;
 
-                    } catch (error) {
-                        console.error('Chat History Error:', error);
-                        // Fallback save even on error? No, just return error.
-                        return "Désolé, j'ai eu un problème de connexion. Réessayez plus tard.";
-                    }
-                }
+    } catch(error) {
+        console.error('Chat History Error:', error);
+        // Fallback save even on error? No, just return error.
+        if (!this.genAI) {
+            return "Je suis en mode simulation (Pas de clé API). Je ne peux pas interroger la base de données réelle.";
+        }
+        try {
+            const model = this.genAI.getGenerativeModel({ model: this.modelName });
+            const history = await this.chatModel.find({ userId })
+                .sort({ createdAt: -1 }) // Get latest 10 messages
+                .limit(10)
+                .lean(); // Optimize read
+
+            // Reverse to chronological order for the AI
+            const chatHistory = history.reverse().map(msg => ({
+                role: msg.role === 'user' ? 'user' : 'model',
+                parts: [{ text: msg.content }]
+            }));
+
+            // 2. Start Chat Session with Context
+            const chat = model.startChat({
+                history: [
+                    {
+                        role: "user",
+                        parts: [{
+                            text: `
+                                System Prompt: You are the AI Assistant for JOM Academy, a platform connecting talents (users) and companies (recruiters) in Africa.
+                                
+                                Your Goal: Help the user with any question about the platform.
+                                - If they ask about Jobs, explain we have a Job Board.
+                                - If they ask about learning, explain our Academy/Courses.
+                                - Be helpful, polite, and concise.
+                                - Always answer in the language the user speaks (French/English).
+                            `}]
+                    },
+                    {
+                        role: "model",
+                        parts: [{ text: "Understood. I am ready to help the JOM Academy user." }]
+                    },
+                    ...chatHistory as any[]
+                ]
+            });
+
+            // 3. Send Message
+            const result = await chat.sendMessage(userMessage);
+            const responseText = result.response.text();
+
+            // 4. Async Save History (Non-blocking preference, but here we await for safety)
+            await this.chatModel.create([
+                { userId, role: 'user', content: userMessage },
+                { userId, role: 'assistant', content: responseText }
+            ]);
+
+            return responseText;
+
+        } catch (error) {
+            console.error('Chat History Error:', error);
+            // Fallback save even on error? No, just return error.
+            return "Désolé, j'ai eu un problème de connexion. Réessayez plus tard.";
+        }
+    }
 
     async getHistory(userId: string) {
-                    return this.chatModel.find({ userId }).sort({ createdAt: 1 }).limit(50);
-                }
-            };
-        }
+        return this.chatModel.find({ userId }).sort({ createdAt: 1 }).limit(50);
     }
 }
