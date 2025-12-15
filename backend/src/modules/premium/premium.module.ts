@@ -22,6 +22,7 @@ import { StudentProgress, StudentProgressSchema } from './schemas/studentProgres
 import { FavoriteProfile, FavoriteProfileSchema } from './schemas/favoriteProfile.schema';
 import { RecruitmentPack, RecruitmentPackSchema } from './schemas/recruitmentPack.schema';
 import { Job, JobSchema } from '../jobs/schemas/job.schema';
+import { Application, ApplicationSchema } from '../jobs/schemas/application.schema';
 import { Post, PostSchema } from './schemas/post.schema';
 import { Notification, NotificationSchema } from '../notifications/schemas/notification.schema';
 import { BoostController } from './boost.controller';
@@ -58,6 +59,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
             { name: FavoriteProfile.name, schema: FavoriteProfileSchema },
             { name: RecruitmentPack.name, schema: RecruitmentPackSchema },
             { name: Job.name, schema: JobSchema },
+            { name: Application.name, schema: ApplicationSchema },
             { name: Post.name, schema: PostSchema },
             { name: Notification.name, schema: NotificationSchema },
         ]),

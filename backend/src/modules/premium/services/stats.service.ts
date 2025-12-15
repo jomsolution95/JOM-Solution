@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { ProfileView, ProfileViewDocument } from '../schemas/profileViews.schema';
 import { Application } from '../../jobs/schemas/application.schema';
 import { StudentProgress, StudentProgressDocument } from '../schemas/studentProgress.schema';
+import { Job } from '../../jobs/schemas/job.schema';
 
 @Injectable()
 export class StatsService {
@@ -12,6 +13,8 @@ export class StatsService {
         private profileViewModel: Model<ProfileViewDocument>,
         @InjectModel(StudentProgress.name)
         private studentProgressModel: Model<StudentProgressDocument>,
+        @InjectModel(Job.name) private jobModel: Model<any>,
+        @InjectModel(Application.name) private applicationModel: Model<any>,
     ) { }
 
     /**
@@ -107,23 +110,55 @@ export class StatsService {
      * Get recruitment statistics for companies
      */
     async getRecruitmentStats(userId: string | Types.ObjectId): Promise<any> {
-        // Note: This would aggregate from Job and Application collections
-        // For now, returning structure
+        const companyId = new Types.ObjectId(userId);
 
-        const userObjectId = new Types.ObjectId(userId);
+        // 1. Job Stats
+        const totalJobs = await this.jobModel.countDocuments({ companyId });
+        const activeJobs = await this.jobModel.countDocuments({ companyId, status: 'active' });
 
-        // Mock data structure - replace with actual aggregations
+        // 2. Application Stats
+        // Find all jobs by this company first
+        const companyJobs = await this.jobModel.find({ companyId }).select('_id');
+        const jobIds = companyJobs.map(j => j._id);
+
+        const totalApplications = await this.applicationModel.countDocuments({
+            job: { $in: jobIds }
+        });
+
+        // 3. Applications by Status
+        const applicationsByStatus = await this.applicationModel.aggregate([
+            { $match: { job: { $in: jobIds } } },
+            { $group: { _id: '$status', count: { $sum: 1 } } }
+        ]);
+
+        // 4. Recent Applications (Graph Data - Last 6 months)
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+        const applicationsByDate = await this.applicationModel.aggregate([
+            {
+                $match: {
+                    job: { $in: jobIds },
+                    createdAt: { $gte: sixMonthsAgo }
+                }
+            },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]);
+
         return {
-            totalJobs: 0,
-            activeJobs: 0,
-            totalApplications: 0,
-            applicationsByStatus: [],
-            conversionRate: 0,
-            averageTimeToHire: 0,
-            topPerformingJobs: [],
-            applicationsBySource: [],
-            applicationsByDate: [],
-            recruiterPerformance: [],
+            totalJobs,
+            activeJobs,
+            totalApplications,
+            applicationsByStatus,
+            conversionRate: totalJobs > 0 ? Math.round(totalApplications / totalJobs) : 0,
+            applicationsByDate,
+            recruiterPerformance: [], // Todo: If multiple recruiters per company
         };
     }
 

@@ -46,7 +46,7 @@ jobs:
         working-directory: ./backend
         run: npm run test:e2e
         env:
-          DATABASE_URL: mongodb://test:test@localhost:27017/jom-test?authSource=admin
+          MONGODB_URI: mongodb://test:test@localhost:27017/jom-test?authSource=admin
           JWT_SECRET: test-secret
 
   build-and-push:

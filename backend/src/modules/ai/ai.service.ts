@@ -5,6 +5,10 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ChatMessage, ChatMessageDocument } from './schemas/chat-message.schema';
+import { User } from '../users/schemas/user.schema';
+import { Job } from '../jobs/schemas/job.schema';
+import { Application } from '../jobs/schemas/application.schema';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class AiService {
@@ -13,7 +17,10 @@ export class AiService {
 
     constructor(
         private configService: ConfigService,
-        @InjectModel(ChatMessage.name) private chatModel: Model<ChatMessageDocument>
+        @InjectModel(ChatMessage.name) private chatModel: Model<ChatMessageDocument>,
+        @InjectModel(User.name) private userModel: Model<any>,
+        @InjectModel(Job.name) private jobModel: Model<any>,
+        @InjectModel(Application.name) private applicationModel: Model<any>,
     ) {
         // Use provided key as fallback or env var 'GEMINI_API_KEY'
         const apiKey = this.configService.get<string>('GEMINI_API_KEY') || 'AIzaSyA9gXHlH58fMwe-6z7MnbdyEkAaDcFGRAk';
@@ -151,12 +158,19 @@ export class AiService {
                 console.error("AI Tool Parse Error", e);
             }
 
-            // 2. Execute Tool (Mocked for now until connected to UsersService)
+            // 2. Execute Tool (REAL DATA)
             let data = null;
             if (toolData.tool === 'get_global_stats') {
-                data = { users: 1543, active_jobs: 42, applications: 128, revenue_mtd: "450,000 FCFA" };
+                const [users, activeJobs, applications] = await Promise.all([
+                    this.userModel.countDocuments(),
+                    this.jobModel.countDocuments({ status: 'active' }),
+                    this.applicationModel.countDocuments()
+                ]);
+                data = { users, active_jobs: activeJobs, applications, revenue_mtd: "(Not implemented)" };
             } else if (toolData.tool === 'search_user') {
-                data = { name: "Test User", email: "test@jom.com", role: "Particulier", subscription: "Free" };
+                // Simplified search for demo
+                const user = await this.userModel.findOne().sort({ createdAt: -1 }).select('email role').lean();
+                data = user ? { ...user, note: "Latest user found" } : { error: "No user found" };
             }
 
             // 3. Generate Final Answer
@@ -194,63 +208,23 @@ export class AiService {
      * @param userMessage The new message from the user.
      * @returns The AI's response string.
      */
+    /**
+     * Handles User Chat with Persistent History.
+     * Fetches the last 10 messages from MongoDB to provide context to Gemini.
+     */
     async chatWithHistory(userId: string, userMessage: string): Promise<string> {
-                            .lean(); // Optimize read
-
-        // Reverse to chronological order for the AI
-        const chatHistory = history.reverse().map(msg => ({
-            role: msg.role === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.content }]
-        }));
-
-        // 2. Start Chat Session with Context
-        const chat = model.startChat({
-            history: [
-                {
-                    role: "user",
-                    parts: [{
-                        text: `
-                            System Prompt: You are the AI Assistant for JOM Academy, a platform connecting talents (users) and companies (recruiters) in Africa.
-                            
-                            Your Goal: Help the user with any question about the platform.
-                            - If they ask about Jobs, explain we have a Job Board.
-                            - If they ask about learning, explain our Academy/Courses.
-                            - Be helpful, polite, and concise.
-                            - Always answer in the language the user speaks (French/English).
-                        `}]
-                },
-                {
-                    role: "model",
-                    parts: [{ text: "Understood. I am ready to help the JOM Academy user." }]
-                },
-                ...chatHistory as any[]
-            ]
-        });
-
-        // 3. Send Message
-        const result = await chat.sendMessage(userMessage);
-        const responseText = result.response.text();
-
-        // 4. Async Save History (Non-blocking preference, but here we await for safety)
-        await this.chatModel.create([
-            { userId, role: 'user', content: userMessage },
-            { userId, role: 'assistant', content: responseText }
-        ]);
-
-        return responseText;
-
-    } catch(error) {
-        console.error('Chat History Error:', error);
-        // Fallback save even on error? No, just return error.
         if (!this.genAI) {
             return "Je suis en mode simulation (Pas de clé API). Je ne peux pas interroger la base de données réelle.";
         }
+
         try {
             const model = this.genAI.getGenerativeModel({ model: this.modelName });
+
+            // 1. Fetch History
             const history = await this.chatModel.find({ userId })
-                .sort({ createdAt: -1 }) // Get latest 10 messages
+                .sort({ createdAt: -1 })
                 .limit(10)
-                .lean(); // Optimize read
+                .lean();
 
             // Reverse to chronological order for the AI
             const chatHistory = history.reverse().map(msg => ({
@@ -265,8 +239,7 @@ export class AiService {
                         role: "user",
                         parts: [{
                             text: `
-                                System Prompt: You are the AI Assistant for JOM Academy, a platform connecting talents (users) and companies (recruiters) in Africa.
-                                
+                                System Prompt: You are the AI Assistant for JOM Academy.
                                 Your Goal: Help the user with any question about the platform.
                                 - If they ask about Jobs, explain we have a Job Board.
                                 - If they ask about learning, explain our Academy/Courses.
@@ -286,7 +259,7 @@ export class AiService {
             const result = await chat.sendMessage(userMessage);
             const responseText = result.response.text();
 
-            // 4. Async Save History (Non-blocking preference, but here we await for safety)
+            // 4. Save History
             await this.chatModel.create([
                 { userId, role: 'user', content: userMessage },
                 { userId, role: 'assistant', content: responseText }
@@ -296,7 +269,6 @@ export class AiService {
 
         } catch (error) {
             console.error('Chat History Error:', error);
-            // Fallback save even on error? No, just return error.
             return "Désolé, j'ai eu un problème de connexion. Réessayez plus tard.";
         }
     }
