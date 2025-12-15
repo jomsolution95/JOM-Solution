@@ -17,7 +17,10 @@ export class AiSchedulerService {
         @InjectModel(ChatMessage.name) private chatModel: Model<ChatMessageDocument>
     ) { }
 
-    // Run every day at 8:00 AM
+    /**
+     * Daily Cron Job (08:00 AM)
+     * Generates a morning briefing for the Admin summarizing platform activity.
+     */
     @Cron(CronExpression.EVERY_DAY_AT_8AM)
     async handleDailyReport() {
         this.logger.log('Starting Daily AI Report generation...');

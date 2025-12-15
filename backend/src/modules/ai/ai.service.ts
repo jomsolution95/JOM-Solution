@@ -110,6 +110,15 @@ export class AiService {
     }
     // --- ADMIN COPILOT ---
 
+    /**
+     * Handles Admin queries using Tool Calls.
+     * 1. Asks AI to select a tool (get_stats, search_user).
+     * 2. Executes the tool (mocked or real).
+     * 3. Feeds result back to AI for natural language response.
+     * @param question The admin's natural language question.
+     * @param context Optional context.
+     * @returns The AI answer + Metadata about the tool used.
+     */
     async adminChat(question: string, context: any = {}): Promise<{ answer: string; toolUsed?: string, toolResult?: any }> {
         if (!this.genAI) {
             return { answer: "Je suis en mode simulation (Pas de clé API). Je ne peux pas interroger la base de données réelle." };
@@ -172,7 +181,14 @@ export class AiService {
             console.error('Admin Chat Error:', error);
             return {
                 answer: "Désolé, une erreur est survenue lors du traitement de votre demande."     // --- POST-AUDIT: USER CONCIERGE ---
-    
+
+    /**
+     * Handles User Chat with Persistent History.
+     * Fetches the last 10 messages from MongoDB to provide context to Gemini.
+     * @param userId The ID of the authenticated user.
+     * @param userMessage The new message from the user.
+     * @returns The AI's response string.
+     */
     async chatWithHistory(userId: string, userMessage: string): Promise<string> {
                     if (!this.genAI) return "Je suis en mode simulation (Pas de clé API).";
 
