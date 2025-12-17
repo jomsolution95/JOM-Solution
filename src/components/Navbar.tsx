@@ -11,6 +11,8 @@ import { useAuth } from '../context/AuthContext';
 import { Logo } from './Logo';
 import { useRealtimeNotifications } from '../hooks/useRealtime';
 import { GlobalSearch } from './GlobalSearch';
+import { NotificationsDropdown } from './NotificationsDropdown';
+import { PremiumBadge } from './PremiumBadge';
 
 export const Navbar: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -24,10 +26,12 @@ export const Navbar: React.FC = () => {
   const [isOpportunitiesOpen, setIsOpportunitiesOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isMobileOpportunitiesOpen, setIsMobileOpportunitiesOpen] = useState(false);
+  const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
 
   // Refs for click outside
   const opportunitiesRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
 
   const opportunitiesLinks = [
     { name: 'Services', path: '/services', icon: ShoppingBag, desc: 'Trouvez des prestataires' },
@@ -46,6 +50,9 @@ export const Navbar: React.FC = () => {
       }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setIsNotificationsPanelOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -143,7 +150,7 @@ export const Navbar: React.FC = () => {
               to="/premium"
               className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 text-yellow-700 dark:text-yellow-500 hover:shadow-md hover:scale-105 transition-all border border-yellow-200 dark:border-yellow-700/50"
             >
-              <Crown className="w-4 h-4" /> Premium
+              <PremiumBadge size={16} className="mr-1" /> Premium
             </Link>
 
             <button
@@ -156,17 +163,27 @@ export const Navbar: React.FC = () => {
 
             {user ? (
               <div className="flex items-center gap-2 sm:gap-4">
-                <button
-                  onClick={() => setIsNotificationsPanelOpen(true)}
-                  className="relative p-2.5 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <Bell className="h-5 w-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-1.5 right-1.5 flex items-center justify-center min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full ring-2 ring-white dark:ring-gray-900 px-1">
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
+                <div className="relative" ref={notificationsRef}>
+                  <button
+                    onClick={() => setIsNotificationsPanelOpen(!isNotificationsPanelOpen)}
+                    className="relative p-2.5 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1.5 right-1.5 flex items-center justify-center min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full ring-2 ring-white dark:ring-gray-900 px-1">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Notifications Dropdown */}
+                  {isNotificationsPanelOpen && (
+                    <NotificationsDropdown
+                      isOpen={isNotificationsPanelOpen}
+                      onClose={() => setIsNotificationsPanelOpen(false)}
+                    />
                   )}
-                </button>
+                </div>
 
                 {/* User Dropdown */}
                 <div className="relative" ref={userMenuRef}>
@@ -188,7 +205,7 @@ export const Navbar: React.FC = () => {
                         <Link to="/dashboard" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
                           <LayoutDashboard className="w-4 h-4 text-gray-400" /> Tableau de bord
                         </Link>
-                        <Link to={`/profile/${user.id}`} onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                        <Link to={`/profile/${user._id}`} onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
                           <UserIcon className="w-4 h-4 text-gray-400" /> Mon Profil
                         </Link>
                         <Link to="/settings" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">

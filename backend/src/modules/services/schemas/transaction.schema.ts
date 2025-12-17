@@ -10,6 +10,7 @@ export enum TransactionType {
     REFUND = 'refund',
     WITHDRAWAL = 'withdrawal',
     DEPOSIT = 'deposit',
+    SUBSCRIPTION = 'subscription',
 }
 
 export enum TransactionStatus {

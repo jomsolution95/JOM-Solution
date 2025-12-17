@@ -3,10 +3,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { User } from '../../users/schemas/user.schema';
 
-export type AuditLogDocument = AuditLog & Document;
+export type AdminAuditLogDocument = AdminAuditLog & Document;
 
 @Schema({ timestamps: true })
-export class AuditLog {
+export class AdminAuditLog {
     @Prop({ type: Types.ObjectId, ref: 'User', required: true })
     admin!: User;
 
@@ -26,4 +26,4 @@ export class AuditLog {
     ipAddress?: string;
 }
 
-export const AuditLogSchema = SchemaFactory.createForClass(AuditLog);
+export const AdminAuditLogSchema = SchemaFactory.createForClass(AdminAuditLog);

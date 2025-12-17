@@ -39,32 +39,14 @@ export const RecruitmentDashboard: React.FC = () => {
         );
     }
 
-    // Mock data for demonstration
-    const applicationsByDate = [
-        { date: '2024-12-01', count: 12 },
-        { date: '2024-12-02', count: 15 },
-        { date: '2024-12-03', count: 8 },
-        { date: '2024-12-04', count: 20 },
-        { date: '2024-12-05', count: 18 },
-        { date: '2024-12-06', count: 25 },
-        { date: '2024-12-07', count: 22 },
-    ];
-
-    const applicationsByStatus = [
-        { name: 'En attente', value: 45, color: '#f59e0b' },
-        { name: 'Présélection', value: 28, color: '#3b82f6' },
-        { name: 'Entretien', value: 15, color: '#8b5cf6' },
-        { name: 'Offre', value: 8, color: '#10b981' },
-        { name: 'Embauché', value: 12, color: '#22c55e' },
-        { name: 'Rejeté', value: 32, color: '#ef4444' },
-    ];
-
-    const topPerformingJobs = [
-        { title: 'Développeur Full Stack', applications: 85, conversion: 12 },
-        { title: 'Designer UI/UX', applications: 62, conversion: 8 },
-        { title: 'Chef de Projet', applications: 48, conversion: 6 },
-        { title: 'Data Analyst', applications: 41, conversion: 5 },
-    ];
+    // Use stats data or fallbacks
+    const applicationsByDate = stats?.applicationsByDate?.map((d: any) => ({ date: d._id, count: d.count })) || [];
+    const applicationsByStatus = stats?.applicationsByStatus?.map((s: any) => ({
+        name: s._id,
+        value: s.count,
+        color: s._id === 'hired' ? '#22c55e' : (s._id === 'rejected' ? '#ef4444' : '#3b82f6') // Simple color mapping
+    })) || [];
+    const topPerformingJobs = stats?.topPerformingJobs || [];
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
@@ -90,7 +72,7 @@ export const RecruitmentDashboard: React.FC = () => {
                                 <Briefcase className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                             </div>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">24</h3>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{stats?.activeJobs || 0}</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Annonces actives</p>
                     </div>
 
@@ -100,7 +82,7 @@ export const RecruitmentDashboard: React.FC = () => {
                                 <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
                             </div>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">342</h3>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{stats?.totalApplications || 0}</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Candidatures totales</p>
                     </div>
 
@@ -110,7 +92,7 @@ export const RecruitmentDashboard: React.FC = () => {
                                 <TrendingUp className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                             </div>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">8.5%</h3>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{stats?.conversionRate || 0}%</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Taux de conversion</p>
                     </div>
 
@@ -120,7 +102,7 @@ export const RecruitmentDashboard: React.FC = () => {
                                 <Clock className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                             </div>
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">12j</h3>
+                        <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">--</h3>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Temps moyen d'embauche</p>
                     </div>
                 </div>
@@ -130,7 +112,7 @@ export const RecruitmentDashboard: React.FC = () => {
                     {/* Applications Over Time */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-                            Candidatures par jour
+                            Candidatures par mois
                         </h3>
                         <ResponsiveContainer width="100%" height={300}>
                             <LineChart data={applicationsByDate}>
@@ -172,8 +154,8 @@ export const RecruitmentDashboard: React.FC = () => {
                                     fill="#8884d8"
                                     dataKey="value"
                                 >
-                                    {applicationsByStatus.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    {applicationsByStatus.map((entry: any, index: number) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
                                 <Tooltip />
@@ -188,7 +170,7 @@ export const RecruitmentDashboard: React.FC = () => {
                         Annonces les plus performantes
                     </h3>
                     <div className="space-y-4">
-                        {topPerformingJobs.map((job, idx) => (
+                        {topPerformingJobs.map((job: any, idx: number) => (
                             <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                                 <div className="flex items-center gap-4 flex-1">
                                     <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-lg flex items-center justify-center text-white font-bold">
@@ -208,7 +190,7 @@ export const RecruitmentDashboard: React.FC = () => {
                                 </div>
                                 <div className="text-right">
                                     <div className="text-lg font-bold text-primary-600 dark:text-primary-400">
-                                        {((job.conversion / job.applications) * 100).toFixed(1)}%
+                                        {(job.applications > 0 ? ((job.conversion / job.applications) * 100).toFixed(1) : 0)}%
                                     </div>
                                     <div className="text-xs text-gray-500">Conversion</div>
                                 </div>
@@ -244,11 +226,7 @@ export const RecruitmentDashboard: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {[
-                                    { name: 'Marie Diop', jobs: 8, applications: 124, hires: 12, avgTime: '10j' },
-                                    { name: 'Amadou Fall', jobs: 6, applications: 98, hires: 9, avgTime: '14j' },
-                                    { name: 'Fatou Sall', jobs: 10, applications: 156, hires: 15, avgTime: '11j' },
-                                ].map((recruiter, idx) => (
+                                {stats?.recruiterPerformance?.map((recruiter: any, idx: number) => (
                                     <tr key={idx} className="border-b border-gray-100 dark:border-gray-700/50">
                                         <td className="py-3 px-4">
                                             <div className="flex items-center gap-3">
@@ -277,6 +255,13 @@ export const RecruitmentDashboard: React.FC = () => {
                                         </td>
                                     </tr>
                                 ))}
+                                {!stats?.recruiterPerformance?.length && (
+                                    <tr>
+                                        <td colSpan={5} className="py-8 text-center text-gray-500">
+                                            Aucune donnée de recrutement disponible.
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>

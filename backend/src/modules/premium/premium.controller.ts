@@ -116,4 +116,11 @@ export class PremiumController {
         const hasBoost = await this.premiumService.hasActiveBoost(targetId, boostType);
         return { hasBoost };
     }
+    /**
+     * Buy Subscription
+     */
+    @Post('sub/buy')
+    async buySubscription(@Request() req: any, @Body() body: any) {
+        return this.premiumService.buySubscription(req.user.userId, body);
+    }
 }

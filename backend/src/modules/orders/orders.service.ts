@@ -7,6 +7,8 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 import { ServicesService } from '../services/services.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/schemas/notification.schema';
 
 @Injectable()
 export class OrdersService {
@@ -16,6 +18,7 @@ export class OrdersService {
         @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
         private servicesService: ServicesService,
         @Inject(forwardRef(() => EscrowService)) private readonly escrowService: EscrowService,
+        private notificationsService: NotificationsService,
     ) { }
 
     async create(createOrderDto: CreateOrderDto, buyerId: string): Promise<Order> {
@@ -32,7 +35,27 @@ export class OrdersService {
             status: OrderStatus.PENDING,
         });
 
-        return createdOrder.save();
+        const savedOrder = await createdOrder.save();
+
+        // Notify Seller
+        await this.notificationsService.send(
+            service.provider.toString(),
+            NotificationType.ORDER,
+            `Nouvelle commande !`,
+            `Vous avez reçu une commande pour "${service.title}". Montant: ${service.basePrice} FCFA.`,
+            `/dashboard/orders/${savedOrder._id}`
+        );
+
+        // Notify Buyer
+        await this.notificationsService.send(
+            buyerId,
+            NotificationType.ORDER_UPDATE,
+            `Commande confirmée`,
+            `Votre commande pour "${service.title}" a été enregistrée.`,
+            `/orders/${savedOrder._id}`
+        );
+
+        return savedOrder;
     }
 
     async findAll(paginationDto: PaginationDto, userId: string, isAdmin: boolean = false): Promise<{ data: Order[]; total: number; page: number; limit: number }> {

@@ -27,6 +27,7 @@ export interface User {
 }
 
 export interface Service {
+  _id?: string;
   id: string;
   title: string;
   category: string;
@@ -35,9 +36,11 @@ export interface Service {
   rating: number;
   reviews: number;
   image: string;
+  images?: string[];
 }
 
 export interface Job {
+  _id?: string;
   id: string;
   title: string;
   company: string;
@@ -51,6 +54,7 @@ export interface Job {
 }
 
 export interface Training {
+  _id?: string;
   id: string;
   title: string;
   institution: string;
@@ -62,6 +66,13 @@ export interface Training {
   rating: number;
   reviews: number;
   level: 'Débutant' | 'Intermédiaire' | 'Avancé';
+  institutionId?: {
+    name: string;
+    avatar?: string;
+  };
+  description?: string;
+  enrolledStudents?: string[];
+  thumbnailUrl?: string;
 }
 
 export interface Experience {
@@ -125,14 +136,30 @@ export interface SocialPost {
     title: string;
     location: string;
     salary: string;
+    serviceDetails?: {
+      title: string;
+      price: number;
+      category: string;
+    };
+    trainingDetails?: {
+      title: string;
+      level: string;
+      price: number;
+    };
+    eventDetails?: {
+      title: string;
+      date: string;
+    };
   };
   serviceDetails?: {
+    title: string;
     price: number;
     category: string;
   };
-  eventDetails?: {
+  trainingDetails?: {
     title: string;
-    date: string;
+    level: string;
+    price: number;
   };
 }
 
@@ -170,4 +197,21 @@ export interface Notification {
   content: string;
   timeAgo: string;
   isRead: boolean;
+}
+
+export interface Certificate {
+  _id: string;
+  id?: string;
+  studentId: User;
+  courseId: Training;
+  certificateNumber: string;
+  issuedDate: string;
+  verificationCode: string;
+  pdfUrl: string;
+  metadata?: {
+    courseName?: string;
+    studentName?: string;
+    completionDate?: string;
+    grade?: string;
+  };
 }

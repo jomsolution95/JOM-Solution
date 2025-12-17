@@ -72,6 +72,27 @@ export class CourseService {
     }
 
     /**
+     * Get all published courses (Catalog)
+     */
+    async getAllPublishedCourses(filters?: any): Promise<TrainingDocument[]> {
+        const query: any = { published: true };
+        if (filters?.category && filters.category !== 'Tous') {
+            query.category = filters.category;
+        }
+        if (filters?.search) {
+            query.$or = [
+                { title: { $regex: filters.search, $options: 'i' } },
+                { description: { $regex: filters.search, $options: 'i' } }
+            ];
+        }
+
+        return this.courseModel
+            .find(query)
+            .populate('institutionId', 'name avatar')
+            .sort({ createdAt: -1 });
+    }
+
+    /**
      * Get single course
      */
     async getCourse(courseId: string | Types.ObjectId): Promise<TrainingDocument> {
@@ -295,6 +316,24 @@ export class CourseService {
             .find({ courseId: new Types.ObjectId(courseId) })
             .populate('studentId', 'name email avatar')
             .sort({ enrolledAt: -1 });
+    }
+
+    /**
+     * Get student's enrolled courses
+     */
+    async getStudentEnrolledCourses(studentId: string | Types.ObjectId): Promise<any[]> {
+        const enrollments = await this.progressModel
+            .find({ studentId: new Types.ObjectId(studentId) })
+            .populate({
+                path: 'courseId',
+                populate: { path: 'institutionId', select: 'name avatar' }
+            })
+            .sort({ lastAccessedAt: -1 });
+
+        return enrollments.map(e => ({
+            enrollment: e,
+            course: e.courseId
+        }));
     }
 
     /**

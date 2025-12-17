@@ -145,7 +145,6 @@ export const Login: React.FC = () => {
                     type="email"
                     autoComplete="email"
                     required
-                    defaultValue="demo@jom-solution.com"
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-700 rounded-xl leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all sm:text-sm dark:text-white"
                     placeholder="votre@email.com"
                   />
@@ -163,8 +162,8 @@ export const Login: React.FC = () => {
                     name="password"
                     type="password"
                     autoComplete="current-password"
+                    autoComplete="current-password"
                     required
-                    defaultValue="password123"
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-700 rounded-xl leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all sm:text-sm dark:text-white"
                     placeholder="••••••••"
                   />

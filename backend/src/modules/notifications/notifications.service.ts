@@ -31,12 +31,12 @@ export class NotificationsService {
         this.notificationsGateway.emitNotification(userId, notification);
 
         // 3. Send Email (Best Effort)
-        this.sendEmailSafely(userId, title, message, link);
+        this.sendEmail(userId, title, message, link);
 
         return { status: 'sent', notificationId: notification._id };
     }
 
-    private async sendEmailSafely(userId: string, title: string, message: string, link?: string) {
+    async sendEmail(userId: string, title: string, message: string, link?: string) {
         try {
             const user = await this.userModel.findById(userId);
             if (user && user.email) {

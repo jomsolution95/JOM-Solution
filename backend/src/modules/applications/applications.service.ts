@@ -4,13 +4,16 @@ import { Model, Types } from 'mongoose';
 import { Application, ApplicationDocument } from './schemas/application.schema';
 import { PremiumService } from '../premium/premium.service';
 import { Job } from '../jobs/schemas/job.schema';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/schemas/notification.schema';
 
 @Injectable()
 export class ApplicationsService {
     constructor(
         @InjectModel(Application.name) private applicationModel: Model<ApplicationDocument>,
         @InjectModel(Job.name) private jobModel: Model<any>,
-        private premiumService: PremiumService
+        private premiumService: PremiumService,
+        private notificationsService: NotificationsService
     ) { }
 
     async apply(userId: string, jobId: string, cvId: string, coverLetter?: string): Promise<Application> {
@@ -55,7 +58,18 @@ export class ApplicationsService {
             status: 'pending'
         });
 
-        return await application.save();
+        const savedApplication = await application.save();
+
+        // 5. Notify Employer
+        await this.notificationsService.send(
+            job.employer.toString(),
+            NotificationType.JOB_APPLICATION,
+            `Nouvelle candidature pour ${job.title}`,
+            `Un candidat vient de postuler à votre offre "${job.title}". Consultez son CV maintenant.`,
+            `/dashboard/applications`
+        );
+
+        return savedApplication;
     }
 
     async findAllByApplicant(userId: string): Promise<Application[]> {

@@ -33,6 +33,7 @@ import { CouponsModule } from './modules/admin/coupons.module';
 import { LoggingInterceptor } from './common/logger/logging.interceptor';
 import { CvModule } from './modules/cv/cv.module';
 import { AiModule } from './modules/ai/ai.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -90,7 +91,9 @@ import { AiModule } from './modules/ai/ai.module';
     AdsModule,
     CouponsModule,
     CvModule,
+    CvModule,
     AiModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [

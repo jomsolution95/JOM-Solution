@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
     Megaphone, Radio, Bell, Home, Share2, Zap, Info
 } from 'lucide-react';
+import { PremiumBadge } from './PremiumBadge';
 
 interface AutoBroadcastToggleProps {
     enabled: boolean;
@@ -45,8 +46,9 @@ export const AutoBroadcastToggle: React.FC<AutoBroadcastToggleProps> = ({
                     <div>
                         <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                             Diffusion Automatique
-                            <span className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-xs font-bold rounded-full">
-                                PREMIUM
+                            Diffusion Automatique
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 text-yellow-700 dark:text-yellow-500 text-xs font-bold rounded-full border border-yellow-200 dark:border-yellow-700/50">
+                                <PremiumBadge size={12} /> PREMIUM
                             </span>
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -59,8 +61,8 @@ export const AutoBroadcastToggle: React.FC<AutoBroadcastToggleProps> = ({
                 <button
                     onClick={() => onChange(!enabled)}
                     className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${enabled
-                            ? 'bg-gradient-to-r from-primary-600 to-secondary-600'
-                            : 'bg-gray-300 dark:bg-gray-600'
+                        ? 'bg-gradient-to-r from-primary-600 to-secondary-600'
+                        : 'bg-gray-300 dark:bg-gray-600'
                         }`}
                 >
                     <span

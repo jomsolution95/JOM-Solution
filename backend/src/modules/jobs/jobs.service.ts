@@ -151,7 +151,10 @@ export class JobsService {
 
         const filter: any = { status: JobStatus.PUBLISHED, deletedAt: null };
         if (q) {
-            filter.$text = { $search: q };
+            filter.$or = [
+                { title: { $regex: q, $options: 'i' } },
+                { description: { $regex: q, $options: 'i' } },
+            ];
         }
 
         const [data, total] = await Promise.all([

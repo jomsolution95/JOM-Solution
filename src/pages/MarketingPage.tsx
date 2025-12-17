@@ -5,6 +5,7 @@ import { BackButton } from '../components/BackButton';
 import api from '../api/client';
 import { toast } from 'react-toastify';
 import { Mail, Zap, Send, Rocket, CheckCircle2, Megaphone } from 'lucide-react';
+import { PremiumBadge } from '../components/PremiumBadge';
 
 export const MarketingPage: React.FC = () => {
     const { user } = useAuth();
@@ -94,8 +95,8 @@ export const MarketingPage: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('email')}
                         className={`pb-4 px-4 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'email'
-                                ? 'border-primary-600 text-primary-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                            ? 'border-primary-600 text-primary-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
                             }`}
                     >
                         <Mail className="w-4 h-4" /> Campagnes Emailing
@@ -103,11 +104,11 @@ export const MarketingPage: React.FC = () => {
                     <button
                         onClick={() => setActiveTab('boost')}
                         className={`pb-4 px-4 font-medium text-sm flex items-center gap-2 border-b-2 transition-colors ${activeTab === 'boost'
-                                ? 'border-primary-600 text-primary-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                            ? 'border-primary-600 text-primary-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
                             }`}
                     >
-                        <Zap className="w-4 h-4" /> Mise en Avant (Boost)
+                        <Zap className="w-4 h-4" /> Mise en Avant (Boost) <PremiumBadge size={14} className="ml-1" />
                     </button>
                 </div>
 

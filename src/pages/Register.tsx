@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { profilesApi } from '../api/profiles';
 import { UserRole } from '../types';
 import { User, Building2, GraduationCap, Upload, Eye, EyeOff, CheckCircle, ArrowRight, ArrowLeft, Star, ShieldCheck } from 'lucide-react';
 import { BackButton } from '../components/BackButton';
@@ -125,20 +126,10 @@ export const Register: React.FC = () => {
         const file = formData[fileField];
 
         if (file instanceof File) {
-          const token = localStorage.getItem('access_token');
-          const uploadData = new FormData();
-          uploadData.append('file', file);
-
-          await fetch(`${import.meta.env.VITE_API_URL}/profiles/avatar`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            },
-            body: uploadData
-          });
+          await profilesApi.uploadAvatar(file);
         }
 
-        navigate('/reseaux');
+        navigate('/dashboard');
       } catch (error) {
         console.error("Registration error", error);
         // Toast is handled in AuthContext usually

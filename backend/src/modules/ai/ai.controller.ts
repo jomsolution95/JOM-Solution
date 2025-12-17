@@ -22,15 +22,15 @@ export class AiController {
     // @UseGuards(RolesGuard) // Todo: specific admin guard if needed
     async adminChat(@Body() body: { question: string }) {
         return this.aiService.adminChat(body.question);
+    }
 
-        @Post('chat')
-        async chat(@Body() body: { message: string }, @Request() req) {
-            return { answer: await this.aiService.chatWithHistory(req.user.userId, body.message) };
-        }
+    @Post('chat')
+    async chat(@Body() body: { message: string }, @Request() req: any) {
+        return { answer: await this.aiService.chatWithHistory(req.user.userId, body.message) };
+    }
 
-        @Get('history')
-        async getHistory(@Request() req) {
-            return this.aiService.getHistory(req.user.userId);
-        }
+    @Get('history')
+    async getHistory(@Request() req: any) {
+        return this.aiService.getHistory(req.user.userId);
     }
 }

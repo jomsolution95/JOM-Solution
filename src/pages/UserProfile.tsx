@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Experience, Education, Skill } from '../types';
+import { Experience, Education, Skill, SocialPost } from '../types';
 import { FeedPost } from '../components/FeedPost';
-import { mockPosts, mockProfiles } from '../utils/mockData';
+import api from '../api/client';
 import { MapPin, Globe, Briefcase, GraduationCap, Plus, MessageCircle, Share2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { BackButton } from '../components/BackButton';
@@ -13,41 +13,128 @@ export const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [profile, setProfile] = useState<any | null>(null);
+  const [similarProfiles, setSimilarProfiles] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('posts');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (userId && mockProfiles[userId]) {
-      setProfile(mockProfiles[userId]);
-    } else {
-      // Default fallback for unknown users (like the logged in user '123')
-      const isCurrentUser = currentUser?._id === userId || currentUser?.id === userId;
-      setProfile({
-        id: userId || 'unknown',
-        name: isCurrentUser ? currentUser?.name : 'Utilisateur JOM',
-        role: isCurrentUser ? (currentUser?.roles?.[0] || currentUser?.role || 'individual') : 'individual',
-        avatar: isCurrentUser ? currentUser?.avatar : `https://ui-avatars.com/api/?name=User+${userId}`,
-        headline: isCurrentUser ? (currentUser?.roles?.includes('company') ? 'Entreprise' : 'Membre de la communauté') : 'Membre JOM Solution',
-        location: 'Sénégal',
-        about: 'Profil utilisateur standard.',
-        experience: [],
-        education: [],
-        skills: []
-      });
+    if (userId) {
+      loadProfile(userId);
+      loadSimilarProfiles();
     }
-  }, [userId, currentUser]);
+  }, [userId]);
 
-  if (!profile) {
+  const loadProfile = async (id: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Logic to determine if we are viewing "me" without an ID (optional, usually router handles /profile/me) 
+      // but here we just use the ID from params.
+      const response = await api.get(`/profiles/user/${id}`);
+      const data = response.data;
+
+      // Map Backend Profile to Frontend UI format
+      const formattedProfile = {
+        id: data.user?._id || data._id, // Handle populated user
+        name: data.displayName || `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Utilisateur',
+        role: (data.user?.roles && data.user.roles[0]) ? data.user.roles[0] : 'individual',
+        avatar: data.avatarUrl || `https://ui-avatars.com/api/?name=${data.firstName}+${data.lastName}`,
+        headline: data.bio?.substring(0, 50) || (data.user?.roles?.includes('company') ? 'Entreprise' : 'Membre JOM'),
+        location: data.location || 'Localisation non renseignée',
+        about: data.bio || '',
+        website: data.companyDetails?.website,
+        experience: data.experience?.map((e: any) => ({
+          id: e._id || Math.random().toString(),
+          title: e.title,
+          company: e.organization,
+          startDate: e.startDate ? new Date(e.startDate).getFullYear() : '',
+          endDate: e.endDate ? new Date(e.endDate).getFullYear() : '',
+          current: !e.endDate,
+          description: e.description,
+          location: ''
+        })) || [],
+        education: data.education?.map((e: any) => ({
+          id: e._id || Math.random().toString(),
+          school: e.school,
+          degree: e.degree,
+          field: '',
+          startDate: '',
+          endDate: e.year
+        })) || [],
+        skills: data.skills?.map((s: string) => ({ name: s, endorsements: 0 })) || [],
+        banner: null // Add banner to schema if needed
+      };
+
+      setProfile(formattedProfile);
+    } catch (err) {
+      console.warn("Full profile not found, trying basic user info...", err);
+      try {
+        // Fallback: Try to fetch basic User data if Profile document is missing
+        const userResponse = await api.get(`/users/${id}`);
+        const u = userResponse.data;
+
+        const fallbackProfile = {
+          id: u._id,
+          name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Utilisateur',
+          role: u.roles?.[0] || 'individual',
+          avatar: `https://ui-avatars.com/api/?name=${u.firstName}+${u.lastName}&background=random`,
+          headline: u.roles?.includes('company') ? 'Entreprise' : 'Nouveau membre',
+          location: 'Non renseigné',
+          about: '',
+          skills: [],
+          experience: [],
+          education: []
+        };
+        setProfile(fallbackProfile);
+      } catch (userErr) {
+        console.error("User also not found", userErr);
+        setError("Profil introuvable.");
+        setProfile(null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadSimilarProfiles = async () => {
+    try {
+      // Just fetch recent profiles as "Similar" for now
+      const response = await api.get('/profiles?limit=3');
+      const profiles = response.data.data.map((p: any) => ({
+        id: p.user?._id,
+        name: `${p.firstName} ${p.lastName}`,
+        avatar: p.avatarUrl || `https://ui-avatars.com/api/?name=${p.firstName}+${p.lastName}`,
+        headline: p.bio?.substring(0, 30) || 'Membre JOM'
+      }));
+      setSimilarProfiles(profiles);
+    } catch (e) {
+      console.log("Error loading similar profiles", e);
+    }
+  };
+
+  const userPosts: SocialPost[] = []; // TODO: Fetch user specific posts if API supports it (e.g. /posts?author=ID)
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="animate-pulse flex flex-col items-center">
-          <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-full mb-4"></div>
-          <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+          <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full mb-4"></div>
+          <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
         </div>
       </div>
     );
   }
 
-  const userPosts = mockPosts.filter(p => p.author.id === profile.id);
+  if (error || !profile) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Profil introuvable</h2>
+        <p className="text-gray-500 mb-6">{error || "Cet utilisateur n'existe pas."}</p>
+        <BackButton />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f3f2ef] dark:bg-black/95 pb-12">
@@ -95,7 +182,7 @@ export const UserProfile: React.FC = () => {
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300 text-base font-medium">{profile.headline}</p>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {profile.location || 'Non renseigné'}</span>
+                  <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {profile.location}</span>
                   {profile.website && <span className="flex items-center gap-1 text-primary-600"><Globe className="w-4 h-4" /> <a href={`https://${profile.website}`} target="_blank" rel="noreferrer">{profile.website}</a></span>}
                   <span className="flex items-center gap-1 text-primary-600 font-medium cursor-pointer hover:underline">500+ relations</span>
                 </div>
@@ -173,15 +260,15 @@ export const UserProfile: React.FC = () => {
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Expérience</h3>
               <div className="space-y-6">
-                {profile.experience?.map((exp: Experience) => (
-                  <div key={exp.id} className="flex gap-4">
+                {profile.experience?.map((exp: Experience, idx: number) => (
+                  <div key={idx} className="flex gap-4">
                     <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center shrink-0">
                       <Briefcase className="w-6 h-6 text-gray-500" />
                     </div>
                     <div>
                       <h4 className="font-bold text-gray-900 dark:text-white">{exp.title}</h4>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{exp.company} • {exp.current ? 'Temps plein' : ''}</p>
-                      <p className="text-xs text-gray-500 mt-1">{exp.startDate} - {exp.current ? 'Aujourd\'hui' : exp.endDate} • {exp.location}</p>
+                      <p className="text-xs text-gray-500 mt-1">{exp.startDate} - {exp.current ? 'Aujourd\'hui' : exp.endDate}</p>
                       <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{exp.description}</p>
                     </div>
                   </div>
@@ -196,8 +283,8 @@ export const UserProfile: React.FC = () => {
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Formation</h3>
               <div className="space-y-6">
-                {profile.education?.map((edu: Education) => (
-                  <div key={edu.id} className="flex gap-4">
+                {profile.education?.map((edu: Education, idx: number) => (
+                  <div key={idx} className="flex gap-4">
                     <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center shrink-0">
                       <GraduationCap className="w-6 h-6 text-gray-500" />
                     </div>
@@ -218,8 +305,8 @@ export const UserProfile: React.FC = () => {
             <div>
               <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 px-1">Activité récente</h3>
               {userPosts.length > 0 ? (
-                userPosts.map(post => (
-                  <FeedPost key={post.id} post={post} />
+                userPosts.map((post, idx) => (
+                  <FeedPost key={idx} post={post} />
                 ))
               ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-8 text-center border border-gray-100 dark:border-gray-700">
@@ -249,17 +336,18 @@ export const UserProfile: React.FC = () => {
 
           {/* Similar Profiles */}
           <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-3">Autres profils similaires</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white mb-3">Autres profils</h3>
             <div className="space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="flex gap-3 items-center">
-                  <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+              {similarProfiles.map((p: any) => (
+                <div key={p.id} className="flex gap-3 items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 p-2 rounded transition-colors" onClick={() => navigate(`/profile/${p.id}`)}>
+                  <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full object-cover" />
                   <div>
-                    <div className="h-3 w-24 bg-gray-200 rounded mb-1"></div>
-                    <div className="h-2 w-16 bg-gray-100 rounded"></div>
+                    <div className="font-medium text-gray-900 dark:text-white text-sm">{p.name}</div>
+                    <div className="text-xs text-gray-500">{p.headline}</div>
                   </div>
                 </div>
               ))}
+              {similarProfiles.length === 0 && <p className="text-sm text-gray-500">Aucune suggestion.</p>}
             </div>
           </div>
         </div>

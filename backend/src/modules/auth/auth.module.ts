@@ -11,13 +11,16 @@ import { FacebookStrategy } from './strategies/facebook.strategy';
 import { LinkedInStrategy } from './strategies/linkedin.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { PremiumModule } from '../premium/premium.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     JwtModule.register({}),
     PassportModule,
+    PassportModule,
     PremiumModule,
+    NotificationsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, AccessTokenStrategy, RefreshTokenStrategy, GoogleStrategy, FacebookStrategy, LinkedInStrategy],

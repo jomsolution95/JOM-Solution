@@ -63,20 +63,23 @@ export const PremiumCheckout: React.FC = () => {
     const { user } = useAuth();
 
     // Get state from navigation (with defaults)
-    const initialPlanId = state?.selectedPlanId || 'company-biz';
+    const initialPlanId = state?.selectedPlanId;
     const initialBillingCycle = state?.billingCycle || 'monthly';
+    const customItem = state?.customItem; // { id, name, price, features, type: 'pack' | 'boost' }
 
-    const [selectedPlan, setSelectedPlan] = useState<string>(initialPlanId);
+    const [selectedPlan, setSelectedPlan] = useState<string>(initialPlanId || 'company-biz');
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>(initialBillingCycle);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wave');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const plan = PLANS[selectedPlan];
+    // Determine what we are buying
+    const isSubscription = !customItem;
+    const plan = isSubscription ? PLANS[selectedPlan] : customItem;
 
-    // Calculate price based on Billing Cycle
+    // Calculate price based on Billing Cycle (only for subscriptions)
     const getFinalPrice = () => {
-        if (billingCycle === 'yearly') {
+        if (isSubscription && billingCycle === 'yearly') {
             return Math.round(plan.price * 12 * 0.8);
         }
         return plan.price;
@@ -148,87 +151,92 @@ export const PremiumCheckout: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Plan Selection */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Billing Toggle (In Checkout too) */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 flex justify-center">
-                            <div className="relative inline-flex bg-gray-100 dark:bg-gray-700 rounded-full p-1 cursor-pointer">
-                                <div className="absolute -top-3 -right-3">
-                                    <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-bounce">
-                                        -20%
-                                    </span>
+                        {/* Plans & Billing (Only for Subscriptions) */}
+                        {isSubscription && (
+                            <>
+                                {/* Billing Toggle */}
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-200 dark:border-gray-700 flex justify-center">
+                                    <div className="relative inline-flex bg-gray-100 dark:bg-gray-700 rounded-full p-1 cursor-pointer">
+                                        <div className="absolute -top-3 -right-3">
+                                            <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm animate-bounce">
+                                                -20%
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => setBillingCycle('monthly')}
+                                            className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${billingCycle === 'monthly'
+                                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                                : 'text-gray-500 dark:text-gray-400'
+                                                }`}
+                                        >
+                                            Mensuel
+                                        </button>
+                                        <button
+                                            onClick={() => setBillingCycle('yearly')}
+                                            className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${billingCycle === 'yearly'
+                                                ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                                                : 'text-gray-500 dark:text-gray-400'
+                                                }`}
+                                        >
+                                            Annuel
+                                        </button>
+                                    </div>
                                 </div>
-                                <button
-                                    onClick={() => setBillingCycle('monthly')}
-                                    className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${billingCycle === 'monthly'
-                                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                        : 'text-gray-500 dark:text-gray-400'
-                                        }`}
-                                >
-                                    Mensuel
-                                </button>
-                                <button
-                                    onClick={() => setBillingCycle('yearly')}
-                                    className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${billingCycle === 'yearly'
-                                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                                        : 'text-gray-500 dark:text-gray-400'
-                                        }`}
-                                >
-                                    Annuel
-                                </button>
-                            </div>
-                        </div>
 
-                        {/* Plans */}
-                        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                                Sélectionnez votre plan
-                            </h2>
-                            <div className="space-y-3">
-                                {Object.values(PLANS).map((p) => (
-                                    <button
-                                        key={p.id}
-                                        onClick={() => setSelectedPlan(p.id)}
-                                        className={`w-full text-left p-4 rounded-xl border-2 transition-all ${selectedPlan === p.id
-                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
-                                            }`}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="font-bold text-gray-900 dark:text-white">
-                                                    {p.name}
-                                                    {p.popular && (
-                                                        <span className="ml-2 text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full">
-                                                            POPULAIRE
-                                                        </span>
-                                                    )}
-                                                </h3>
-                                                <p className="text-2xl font-bold text-primary-600 dark:text-primary-400 mt-1">
-                                                    {billingCycle === 'yearly'
-                                                        ? (Math.round(p.price * 12 * 0.8)).toLocaleString()
-                                                        : p.price.toLocaleString()} FCFA
-                                                    <span className="text-sm text-gray-500 font-normal">
-                                                        /{billingCycle === 'yearly' ? 'an' : 'mois'}
-                                                    </span>
-                                                </p>
-                                                {billingCycle === 'yearly' && (
-                                                    <p className="text-xs text-green-600 font-bold">
-                                                        Économie : {(p.price * 12 * 0.2).toLocaleString()} FCFA
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <div
-                                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedPlan === p.id
-                                                    ? 'border-primary-500 bg-primary-500'
-                                                    : 'border-gray-300'
+                                {/* Plans List */}
+                                <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                                        Sélectionnez votre plan
+                                    </h2>
+                                    <div className="space-y-3">
+                                        {Object.values(PLANS).map((p) => (
+                                            <button
+                                                key={p.id}
+                                                onClick={() => setSelectedPlan(p.id)}
+                                                className={`w-full text-left p-4 rounded-xl border-2 transition-all ${selectedPlan === p.id
+                                                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                                    : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
                                                     }`}
                                             >
-                                                {selectedPlan === p.id && <Check className="w-4 h-4 text-white" />}
-                                            </div>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <h3 className="font-bold text-gray-900 dark:text-white">
+                                                            {p.name}
+                                                            {p.popular && (
+                                                                <span className="ml-2 text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full">
+                                                                    POPULAIRE
+                                                                </span>
+                                                            )}
+                                                        </h3>
+                                                        <p className="text-2xl font-bold text-primary-600 dark:text-primary-400 mt-1">
+                                                            {billingCycle === 'yearly'
+                                                                ? (Math.round(p.price * 12 * 0.8)).toLocaleString()
+                                                                : p.price.toLocaleString()} FCFA
+                                                            <span className="text-sm text-gray-500 font-normal">
+                                                                /{billingCycle === 'yearly' ? 'an' : 'mois'}
+                                                            </span>
+                                                        </p>
+                                                        {billingCycle === 'yearly' && (
+                                                            <p className="text-xs text-green-600 font-bold">
+                                                                Économie : {(p.price * 12 * 0.2).toLocaleString()} FCFA
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                    <div
+                                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedPlan === p.id
+                                                            ? 'border-primary-500 bg-primary-500'
+                                                            : 'border-gray-300'
+                                                            }`}
+                                                    >
+                                                        {selectedPlan === p.id && <Check className="w-4 h-4 text-white" />}
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         {/* Payment Method */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">

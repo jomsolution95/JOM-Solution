@@ -6,6 +6,8 @@ import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 
 async function bootstrap() {
+  console.log('--- BOOTSTRAPPING NESTJS APPLICATION ---');
+  console.log('Processing environment...');
   const app = await NestFactory.create(AppModule);
 
   // Security Middlewares
@@ -40,8 +42,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  const port = process.env.PORT || 3001;
-  await app.listen(port);
+  const port = process.env.PORT || 3000;
+  await app.listen(port, '0.0.0.0');
   console.log(`Application running on port ${port}`);
 }
 bootstrap();

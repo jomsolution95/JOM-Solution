@@ -1,6 +1,7 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SubscriptionService } from '../premium/services/subscription.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { SubscriptionPlan, SubscriptionStatus } from '../premium/schemas/subscription.schema';
 import { UserRole } from '../users/schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
@@ -19,25 +20,10 @@ export class AuthService {
         private jwtService: JwtService,
         private configService: ConfigService,
         private subscriptionService: SubscriptionService,
+        private notificationsService: NotificationsService,
     ) { }
 
-    async forceResetSuperAdmin() {
-        const email = 'jomsolution95@gmail.com';
-        const password = 'AlhamdulilLah95';
-        const salt = await bcrypt.genSalt();
-        const hash = await bcrypt.hash(password, salt);
 
-        const updated = await this.userModel.findOneAndUpdate(
-            { email },
-            {
-                passwordHash: hash,
-                roles: ['SUPER_ADMIN', 'ADMIN', 'INDIVIDUAL'],
-                isVerified: true
-            },
-            { new: true, upsert: true }
-        );
-        return { msg: 'SUCCESS: Password Reset Done.', user: updated.email };
-    }
 
 
     async register(dto: RegisterDto) {
@@ -69,17 +55,17 @@ export class AuthService {
             await this.updateRefreshTokenHash(newUser._id.toString(), tokens.refresh_token);
             return tokens;
         } catch (error: any) {
-            if (error.code === 11000) throw new ForbiddenException('Credentials taken');
+            if (error.code === 11000) throw new ConflictException('Credentials taken');
             throw error;
         }
     }
 
     async login(dto: LoginDto): Promise<{ access_token: string; refresh_token: string, user: any }> {
         const user = await this.userModel.findOne({ email: dto.email }).select('+passwordHash +roles');
-        if (!user) throw new ForbiddenException('Access Denied');
+        if (!user) throw new UnauthorizedException('Invalid credentials');
 
         const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
-        if (!passwordMatches) throw new ForbiddenException('Access Denied');
+        if (!passwordMatches) throw new UnauthorizedException('Invalid credentials');
 
         const tokens = await this.getTokens(user._id.toString(), user.email, user.roles);
         await this.updateRefreshTokenHash(user._id.toString(), tokens.refresh_token);
@@ -204,8 +190,8 @@ export class AuthService {
         const resetLink = `http://localhost:5173/reset-password?token=${resetToken}&email=${user.email}`;
         console.log(`\n\n========================================================\nPASSWORD RESET REQUEST FOR: ${user.email}\nLINK: ${resetLink}\n========================================================\n\n`);
 
-        // TODO: Integrate NotificationsService when email is configured
-        // await this.notificationsService.sendEmail(user.email, 'Reset Password', resetLink);
+        await this.notificationsService.sendEmail(user._id.toString(), 'Reset Password', `Click here to reset your password: <a href="${resetLink}">Reset Link</a>`, resetLink);
+
 
         return { message: 'Reset link sent' };
     }
@@ -232,5 +218,11 @@ export class AuthService {
         await user.save();
 
         return { message: 'Password updated successfully' };
+    }
+    async forceResetSuperAdmin() {
+        // Implementation for emergency super admin reset
+        // This is a placeholder as the actual implementation might vary
+        // based on specific requirements, but fixing the compilation error first.
+        return { message: 'Super Admin reset functionality placeholder' };
     }
 }

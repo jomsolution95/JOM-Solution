@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BackButton } from '../components/BackButton';
-import { mockNetwork } from '../utils/mockData';
+
 
 // Configuration des communautés par rôle
 const COMMUNITIES_BY_ROLE = {
@@ -59,11 +59,81 @@ const FILTER_OPTIONS = {
     }
 };
 
+import api from '../api/client';
+import { SocialPost } from '../types';
+
 export const SocialNetwork: React.FC = () => {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState<'all' | UserRole>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
+
+    // Real Data State
+    const [posts, setPosts] = useState<SocialPost[]>([]);
+    const [recommendedProfiles, setRecommendedProfiles] = useState<any[]>([]);
+    const [trendsProfiles, setTrendsProfiles] = useState<any[]>([]);
+    const [loadingPosts, setLoadingPosts] = useState(true);
+
+    // Fetch Posts & Suggestions
+    useEffect(() => {
+        fetchPosts();
+        fetchSuggestions();
+    }, []);
+
+    const fetchPosts = async () => {
+        try {
+            const response = await api.get('/posts');
+            const rawPosts = response.data.data;
+
+            const mappedPosts = rawPosts.map((p: any) => ({
+                id: p._id,
+                author: {
+                    id: p.author?._id || 'unknown',
+                    name: p.author ? `${p.author.firstName} ${p.author.lastName}` : 'Utilisateur Inconnu',
+                    avatar: p.author?.avatar || `https://ui-avatars.com/api/?name=${p.author?.firstName}+${p.author?.lastName}`,
+                    role: (p.author?.roles && p.author.roles[0]) ? p.author.roles[0].toLowerCase() : 'individual',
+                    headline: p.author?.headline || 'Membre JOM'
+                },
+                type: p.type === 'job' ? 'job_offer' : (p.image ? 'media' : 'text'),
+                content: p.content,
+                timestamp: new Date(p.createdAt).toLocaleDateString(),
+                likes: p.likes?.length || 0,
+                comments: p.comments?.length || 0,
+                shares: p.shares?.length || 0,
+                isLiked: p.likes?.includes(user?._id),
+                isLiked: p.likes?.includes(user?._id),
+                image: p.metadata?.images ? p.metadata.images[0] : (p.image || undefined),
+                jobDetails: p.metadata?.jobDetails,
+                serviceDetails: p.metadata?.serviceDetails,
+                trainingDetails: p.metadata?.trainingDetails,
+            }));
+
+            setPosts(mappedPosts);
+        } catch (error) {
+            console.error("Failed to fetch posts:", error);
+        } finally {
+            setLoadingPosts(false);
+        }
+    };
+
+    const fetchSuggestions = async () => {
+        try {
+            const response = await api.get('/profiles?limit=6');
+            const profiles = response.data.data.map((p: any) => ({
+                id: p.user?._id,
+                name: `${p.firstName} ${p.lastName}`,
+                avatar: p.avatarUrl || `https://ui-avatars.com/api/?name=${p.firstName}+${p.lastName}`,
+                headline: p.bio?.substring(0, 30) || 'Membre JOM',
+                isVerified: p.user?.isVerified
+            }));
+
+            // Split into Recommended and Trends
+            setRecommendedProfiles(profiles.slice(0, 3));
+            setTrendsProfiles(profiles.slice(3, 6));
+        } catch (e) {
+            console.error("Failed to fetch suggestions", e);
+        }
+    };
 
     // State pour les filtres avancés
     const [filters, setFilters] = useState({
@@ -77,33 +147,6 @@ export const SocialNetwork: React.FC = () => {
         setFilters({ location: '', sector: '', status: '' });
         setSearchQuery('');
     }, [activeTab]);
-
-    // Logique de filtrage principale
-    const filteredProfiles = mockNetwork.filter(profile => {
-        // 1. Filtre par Onglet (Type)
-        const matchesTab = activeTab === 'all' || profile.type === activeTab;
-
-        // 2. Filtre Recherche Textuelle
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-            profile.name.toLowerCase().includes(query) ||
-            profile.headline.toLowerCase().includes(query) ||
-            profile.location.toLowerCase().includes(query) ||
-            profile.tags.some(tag => tag.toLowerCase().includes(query));
-
-        // 3. Filtres Avancés
-        const matchesLocation = filters.location === '' || profile.location.includes(filters.location);
-
-        const matchesSector = filters.sector === '' || profile.tags.some(t => t.includes(filters.sector));
-
-        let matchesStatus = true;
-        if (filters.status === 'open') matchesStatus = !!profile.isOpenToWork;
-        if (filters.status === 'hiring') matchesStatus = !!profile.isHiring;
-
-        return matchesTab && matchesSearch && matchesLocation && matchesSector && matchesStatus;
-    });
-
-    const recommendedProfiles = mockNetwork.filter(p => p.isVerified || p.isHiring).slice(0, 3);
 
     // Helpers pour l'UI
     const getTabLabel = (type: string) => {
@@ -281,8 +324,8 @@ export const SocialNetwork: React.FC = () => {
                                 key={tab}
                                 onClick={() => setActiveTab(tab as any)}
                                 className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all ${isActive
-                                        ? 'bg-primary-600 text-white shadow-md'
-                                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
+                                    ? 'bg-primary-600 text-white shadow-md'
+                                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
                                     }`}
                             >
                                 <Icon className="w-4 h-4" />
@@ -297,8 +340,8 @@ export const SocialNetwork: React.FC = () => {
                     {/* MAIN CONTENT: NETWORK LIST */}
                     <div className="lg:col-span-8 space-y-8">
 
-                        {/* Recommended Section (Only on 'all' view with no filters) */}
-                        {activeTab === 'all' && !searchQuery && !filters.location && !filters.sector && (
+                        {/* Recommended Section (Real API Data) */}
+                        {activeTab === 'all' && !searchQuery && recommendedProfiles.length > 0 && (
                             <div className="mb-8">
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -312,18 +355,18 @@ export const SocialNetwork: React.FC = () => {
                                                 <img src={profile.avatar} alt={profile.name} className="w-12 h-12 rounded-lg object-cover" />
                                                 {profile.isVerified && <CheckCircle2 className="w-5 h-5 text-blue-500" />}
                                             </div>
-                                            <h3 className="font-bold text-gray-900 dark:text-white truncate">{profile.name}</h3>
+                                            <Link to={`/profile/${profile.id}`}>
+                                                <h3 className="font-bold text-gray-900 dark:text-white truncate hover:underline">{profile.name}</h3>
+                                            </Link>
                                             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 truncate">{profile.headline}</p>
                                             <button
                                                 onClick={() => handleConnect(profile.id)}
                                                 className={`w-full py-1.5 rounded-lg border text-xs font-bold transition-colors ${connectedUsers.includes(profile.id)
-                                                        ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/30 dark:border-primary-800'
-                                                        : 'border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20'
+                                                    ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/30 dark:border-primary-800'
+                                                    : 'border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20'
                                                     }`}
                                             >
-                                                {connectedUsers.includes(profile.id)
-                                                    ? (profile.type === 'individual' ? 'Demande envoyée' : 'Suivi')
-                                                    : (profile.type === 'individual' ? 'Se connecter' : 'Suivre')}
+                                                {connectedUsers.includes(profile.id) ? 'Suivi' : 'Suivre'}
                                             </button>
                                         </div>
                                     ))}
@@ -335,134 +378,83 @@ export const SocialNetwork: React.FC = () => {
                         <div>
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                                    {searchQuery || filters.location || filters.sector ? 'Résultats de recherche' : 'Explorer le réseau'}
+                                    Fil d'actualité ({posts.length})
                                 </h2>
-                                <span className="text-sm text-gray-500">{filteredProfiles.length} résultats</span>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {filteredProfiles.map((profile) => (
-                                    <div key={profile.id} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all group flex flex-col">
-                                        {/* Banner / Header */}
-                                        <div className={`h-24 ${profile.type === 'individual' ? 'bg-gradient-to-r from-blue-400 to-indigo-500' : 'bg-gray-100 dark:bg-gray-700'} relative`}>
-                                            {profile.type !== 'individual' && (
-                                                <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                                                    <Building2 className="w-20 h-20" />
-                                                </div>
-                                            )}
+                            {/* POSTS FEED */}
+                            <div className="space-y-6">
+                                {loadingPosts ? (
+                                    <div className="text-center py-10">Chargement...</div>
+                                ) : posts.map((post) => (
+                                    <div key={post.id} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+                                        {/* Author Header */}
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <Link to={`/profile/${post.author.id}`}>
+                                                <img src={post.author.avatar} alt={post.author.name} className="w-10 h-10 rounded-full object-cover" />
+                                            </Link>
+                                            <div>
+                                                <Link to={`/profile/${post.author.id}`} className="hover:underline">
+                                                    <h3 className="font-bold text-gray-900 dark:text-white">{post.author.name}</h3>
+                                                </Link>
+                                                <p className="text-xs text-gray-500">{post.author.headline} • {post.timestamp}</p>
+                                            </div>
                                         </div>
 
                                         {/* Content */}
-                                        <div className="px-6 pb-6 -mt-12 flex-1 flex flex-col relative z-10">
-                                            <div className="flex justify-between items-end mb-3">
-                                                <Link to={`/profile/${profile.id}`}>
-                                                    <img
-                                                        src={profile.avatar}
-                                                        alt={profile.name}
-                                                        className={`w-24 h-24 border-4 border-white dark:border-gray-800 shadow-md object-cover bg-white dark:bg-gray-800 ${profile.type === 'individual' ? 'rounded-full' : 'rounded-xl'}`}
-                                                    />
-                                                </Link>
-                                                <div className="flex gap-2 mb-1">
-                                                    <button className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-primary-100 hover:text-primary-600 transition-colors">
-                                                        <MessageCircle className="w-5 h-5" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleConnect(profile.id)}
-                                                        className={`p-2 rounded-full transition-colors shadow-md ${connectedUsers.includes(profile.id)
-                                                                ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
-                                                                : 'bg-primary-600 text-white hover:bg-primary-700'
-                                                            }`}
-                                                    >
-                                                        {connectedUsers.includes(profile.id)
-                                                            ? <CheckCircle2 className="w-5 h-5" />
-                                                            : (profile.type === 'individual' ? <UserPlus className="w-5 h-5" /> : <Plus className="w-5 h-5" />)
-                                                        }
-                                                    </button>
-                                                </div>
-                                            </div>
+                                        <div className="mb-4 text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                                            {post.content}
+                                        </div>
 
-                                            <div className="flex-1">
-                                                <Link to={`/profile/${profile.id}`} className="block group-hover:text-primary-600 transition-colors">
-                                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                                        {profile.name}
-                                                        {profile.isVerified && <CheckCircle2 className="w-4 h-4 text-blue-500" />}
-                                                    </h3>
-                                                </Link>
-                                                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mb-1 line-clamp-2">{profile.headline}</p>
-                                                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-3">
-                                                    <MapPin className="w-3 h-3" /> {profile.location}
-                                                </div>
-
-                                                {/* Tags */}
-                                                <div className="flex flex-wrap gap-2 mt-3">
-                                                    {profile.tags.slice(0, 3).map((tag, i) => (
-                                                        <span key={i} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-md">
-                                                            {tag}
-                                                        </span>
-                                                    ))}
-                                                </div>
+                                        {/* Image if available */}
+                                        {post.image && (
+                                            <div className="mb-4 rounded-xl overflow-hidden">
+                                                <img src={post.image} alt="Post content" className="w-full h-auto object-cover" />
                                             </div>
+                                        )}
 
-                                            {/* Footer Info */}
-                                            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-xs">
-                                                <span className="text-gray-500 dark:text-gray-400 font-medium">{profile.followers.toLocaleString()} abonnés</span>
-                                                {profile.isHiring && <span className="text-purple-600 font-bold bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded">Recrute 🚀</span>}
-                                                {profile.isOpenToWork && <span className="text-green-600 font-bold bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded">#OpenToWork</span>}
-                                            </div>
+                                        {/* Footer Actions */}
+                                        <div className="flex items-center gap-6 text-gray-500 text-sm">
+                                            <button className="flex items-center gap-2 hover:text-primary-600 transition-colors">
+                                                <Heart className={`w-5 h-5 ${post.isLiked ? 'fill-red-500 text-red-500' : ''}`} /> {post.likes}
+                                            </button>
+                                            <button className="flex items-center gap-2 hover:text-primary-600 transition-colors">
+                                                <MessageCircle className="w-5 h-5" /> {post.comments}
+                                            </button>
+                                            <button className="flex items-center gap-2 hover:text-primary-600 transition-colors">
+                                                <Share2 className="w-5 h-5" /> {post.shares}
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-
-                            {filteredProfiles.length === 0 && (
-                                <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700">
-                                    <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Aucun résultat trouvé</h3>
-                                    <p className="text-gray-500 mt-2">Essayez d'autres mots-clés ou ajustez les filtres.</p>
-                                    <button
-                                        onClick={() => { setFilters({ location: '', sector: '', status: '' }); setSearchQuery(''); }}
-                                        className="mt-4 text-primary-600 font-bold hover:underline"
-                                    >
-                                        Tout effacer
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     </div>
 
                     {/* RIGHT SIDEBAR: TRENDS & COMMUNITIES */}
                     <div className="lg:col-span-4 space-y-8">
 
-                        {/* Trends */}
+                        {/* Trends (Now connected to real API) */}
                         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
                             <h3 className="font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-                                <TrendingUp className="w-5 h-5 text-green-500" /> Tendances & Nouveaux
+                                <TrendingUp className="w-5 h-5 text-green-500" /> Suggestions
                             </h3>
                             <div className="space-y-6">
-                                <div className="flex items-center gap-3">
-                                    <img src="https://ui-avatars.com/api/?name=Orange+Digital&background=orange&color=fff" className="w-10 h-10 rounded-lg" alt="" />
-                                    <div className="flex-1">
-                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white">Orange Digital Center</h4>
-                                        <p className="text-xs text-gray-500">Formation • 500+ nouveaux abonnés</p>
+                                {trendsProfiles.map(p => (
+                                    <div key={p.id} className="flex items-center gap-3">
+                                        <img src={p.avatar} className="w-10 h-10 rounded-lg" alt={p.name} />
+                                        <div className="flex-1 overflow-hidden">
+                                            <Link to={`/profile/${p.id}`} className="hover:underline">
+                                                <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">{p.name}</h4>
+                                            </Link>
+                                            <p className="text-xs text-gray-500 truncate">{p.headline}</p>
+                                        </div>
+                                        <button className="text-primary-600 text-xs font-bold hover:underline" onClick={() => handleConnect(p.id)}>
+                                            {connectedUsers.includes(p.id) ? 'Suivi' : 'Suivre'}
+                                        </button>
                                     </div>
-                                    <button className="text-primary-600 text-xs font-bold hover:underline">Suivre</button>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <img src="https://ui-avatars.com/api/?name=Fatou+Ndiaye&background=random" className="w-10 h-10 rounded-full" alt="" />
-                                    <div className="flex-1">
-                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white">Fatou Ndiaye</h4>
-                                        <p className="text-xs text-gray-500">Architecte • Projet Viral</p>
-                                    </div>
-                                    <button className="text-primary-600 text-xs font-bold hover:underline">Connecter</button>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <img src="https://ui-avatars.com/api/?name=UNICEF&background=blue&color=fff" className="w-10 h-10 rounded-lg" alt="" />
-                                    <div className="flex-1">
-                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white">UNICEF Sénégal</h4>
-                                        <p className="text-xs text-gray-500">ONG • Campagne active</p>
-                                    </div>
-                                    <button className="text-primary-600 text-xs font-bold hover:underline">Suivre</button>
-                                </div>
+                                ))}
+                                {trendsProfiles.length === 0 && <p className="text-xs text-gray-500">Aucune suggestion pour le moment.</p>}
                             </div>
                         </div>
 
@@ -512,3 +504,4 @@ export const SocialNetwork: React.FC = () => {
 };
 
 export default SocialNetwork;
+

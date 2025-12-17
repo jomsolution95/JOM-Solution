@@ -15,7 +15,7 @@ export const handleApiError = (error: AxiosError<ApiErrorResponse>) => {
     // Network error (no response from server)
     if (!error.response) {
         console.error('Network Error:', error.message);
-        toast.error('Network error. Please check your connection and try again.');
+        toast.error('Erreur réseau. Vérifiez votre connexion et réessayez.');
         return;
     }
 
@@ -34,44 +34,45 @@ export const handleApiError = (error: AxiosError<ApiErrorResponse>) => {
     // Handle specific status codes
     switch (status) {
         case 400:
-            toast.error(`Bad Request: ${errorMessage}`);
+            toast.error(`Requête invalide : ${errorMessage}`);
             break;
 
         case 401:
-            // Don't show toast for 401 - handled by interceptor
+            // Don't show toast for 401 - handled by interceptor (auth flow)
             console.warn('Unauthorized - Token refresh will be attempted');
             break;
 
         case 403:
-            toast.error('Access forbidden. You do not have permission to perform this action.');
+            toast.error('Accès refusé. Vous n\'avez pas la permission d\'effectuer cette action.');
             break;
 
         case 404:
-            toast.error('Resource not found.');
+            toast.error('Ressource introuvable.');
             break;
 
         case 409:
-            toast.error(`Conflict: ${errorMessage}`);
+            // Specific handling for duplicate users is often 409
+            toast.error(`Conflit : ${errorMessage}`);
             break;
 
         case 422:
-            toast.error(`Validation Error: ${errorMessage}`);
+            toast.error(`Erreur de validation : ${errorMessage}`);
             break;
 
         case 429:
-            toast.error('Too many requests. Please slow down and try again later.');
+            toast.error('Trop de requêtes. Veuillez ralentir et réessayer plus tard.');
             break;
 
         case 500:
-            toast.error('Server error. Please try again later.');
+            toast.error('Erreur serveur. Veuillez réessayer plus tard.');
             break;
 
         case 503:
-            toast.error('Service temporarily unavailable. Please try again later.');
+            toast.error('Service temporairement indisponible. Veuillez réessayer plus tard.');
             break;
 
         default:
-            toast.error(errorMessage);
+            toast.error(errorMessage || 'Une erreur inattendue est survenue.');
     }
 };
 

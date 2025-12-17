@@ -11,12 +11,18 @@ import {
   FileText, GraduationCap, Heart, Crown, TrendingUp, Calendar, MessageSquare,
   User, LayoutDashboard, ArrowUpRight, Plus, ChevronRight, Clock, Search, Zap, CheckCircle2, Star, Video, Rocket
 } from 'lucide-react';
+import { useOnboardingStore } from '../store/useOnboardingStore';
+import { PremiumBadge } from '../components/PremiumBadge';
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../api/client';
 
 // --- DESIGN COMPONENTS ---
 
-const QuickAction = ({ icon: Icon, label, to, color }: { icon: any, label: string, to: string, color: string }) => (
+const QuickAction = ({ icon: Icon, label, to, color, ...props }: { icon: any, label: string, to: string, color: string, [key: string]: any }) => (
   <Link
     to={to}
+    {...props}
     className="group flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 cursor-pointer"
   >
     <div className={`p-3 rounded-xl mb-3 ${color} bg-opacity-10 group-hover:scale-110 transition-transform duration-300`}>
@@ -56,7 +62,7 @@ const PremiumCard = () => (
 
     <div className="relative z-10 text-center">
       <div className="inline-flex items-center gap-2 mb-4 bg-yellow-500/20 p-1.5 rounded-lg backdrop-blur-sm border border-yellow-500/30">
-        <Crown className="w-5 h-5 text-yellow-400" />
+        <PremiumBadge size={20} />
         <span className="text-yellow-400 font-bold text-xs tracking-wider uppercase">Offre Limitée</span>
       </div>
       <h3 className="text-xl font-bold mb-3">Débloquez tout le potentiel</h3>
@@ -83,32 +89,47 @@ const SectionHeader = ({ title, linkText, linkTo }: { title: string, linkText?: 
 // --- DASHBOARD VIEWS ---
 
 const IndividualDashboard = () => {
+  const [stats, setStats] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const { data } = await api.get('/stats/profile'); // Ensure endpoint matches backend
+        setStats(data.stats);
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
   const recentActivity = [
     { id: 1, type: 'order', title: 'Plomberie', subtitle: 'Jean Michel • En cours', date: 'Aujourd\'hui', amount: '-15 000', icon: ShoppingBag, color: 'bg-blue-100 text-blue-600' },
     { id: 2, type: 'course', title: 'Dev Web', subtitle: 'Module 4 terminé', date: 'Hier', amount: '+15% XP', icon: GraduationCap, color: 'bg-purple-100 text-purple-600' },
     { id: 3, type: 'job', title: 'Candidature envoyée', subtitle: 'Tech Solutions', date: '24 Oct', status: 'Envoyé', icon: Briefcase, color: 'bg-green-100 text-green-600' },
   ];
 
+  if (loading) return <div className="p-8 text-center text-gray-500 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>;
+
   return (
     <div className="space-y-8">
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div data-tour="service-search-link">
-          <QuickAction icon={Search} label="Trouver un Service" to="/services" color="bg-blue-500" />
-        </div>
+        <QuickAction icon={Search} label="Trouver un Service" to="/services" color="bg-blue-500" data-tour="service-search-link" />
         <QuickAction icon={Plus} label="Proposer un Service" to="/my-items" color="bg-pink-500" />
-        <div data-tour="job-search-link">
-          <QuickAction icon={Briefcase} label="Offres d'Emploi" to="/jobs" color="bg-green-500" />
-        </div>
+        <QuickAction icon={Briefcase} label="Offres d'Emploi" to="/jobs" color="bg-green-500" data-tour="job-search-link" />
         <QuickAction icon={GraduationCap} label="Mes Formations" to="/formations" color="bg-purple-500" />
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tour="dashboard-stats">
-        <StatCard title="Dépenses (Mois)" value="45 000 F" icon={CreditCard} color="bg-blue-500" trend="up" subtext="+12%" />
-        <StatCard title="Commandes" value="4" icon={ShoppingBag} color="bg-indigo-500" trend="up" subtext="2 actives" />
-        <StatCard title="Candidatures" value="8" icon={Briefcase} color="bg-green-500" trend="down" subtext="3 vues" />
-        <StatCard title="Certifications" value="2" icon={Crown} color="bg-yellow-500" trend="up" subtext="1 en cours" />
+        <StatCard title="Dépenses (Mois)" value={stats?.totalSpending ? `${stats.totalSpending} F` : '0 F'} icon={CreditCard} color="bg-blue-500" trend="up" subtext="+0%" />
+        <StatCard title="Commandes" value={stats?.activeOrders || 0} icon={ShoppingBag} color="bg-indigo-500" trend="up" subtext="Actives" />
+        <StatCard title="Candidatures" value={stats?.applicationsCount || 0} icon={Briefcase} color="bg-green-500" trend="up" subtext="Envoyées" />
+        <StatCard title="Certifications" value={stats?.certificationsCount || 0} icon={Crown} color="bg-yellow-500" trend="up" subtext="Obtenues" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -175,36 +196,50 @@ const IndividualDashboard = () => {
 };
 
 const CompanyDashboard = () => {
-  const data = [
-    { name: 'Jan', revenue: 4000, visits: 2400 },
-    { name: 'Fév', revenue: 3000, visits: 1398 },
-    { name: 'Mar', revenue: 2000, visits: 9800 },
-    { name: 'Avr', revenue: 2780, visits: 3908 },
-    { name: 'Mai', revenue: 1890, visits: 4800 },
-    { name: 'Juin', revenue: 2390, visits: 3800 },
-    { name: 'Juil', revenue: 3490, visits: 4300 },
-  ];
+  const [stats, setStats] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [chartData, setChartData] = React.useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const { data } = await api.get('/stats/recruitment');
+        setStats(data.stats);
+        if (data.stats?.monthlyStats) {
+          setChartData(data.stats.monthlyStats);
+        } else {
+          setChartData([
+            { name: 'Jan', revenue: 0, visits: 0 },
+            { name: 'Fév', revenue: 0, visits: 0 },
+          ]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch company stats", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  if (loading) return <div className="p-8 text-center text-gray-500 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>;
 
   return (
     <div className="space-y-8">
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <QuickAction icon={Plus} label="Nouveau Service" to="/my-items" color="bg-blue-500" />
-        <div data-tour="post-job-btn">
-          <QuickAction icon={Briefcase} label="Publier Offre" to="/jobs" color="bg-purple-500" />
-        </div>
-        <div data-tour="cvtheque-link">
-          <QuickAction icon={Search} label="Trouver un Service" to="/services" color="bg-green-500" />
-        </div>
+        <QuickAction icon={Briefcase} label="Publier Offre" to="/jobs" color="bg-purple-500" data-tour="post-job-btn" />
+        <QuickAction icon={Search} label="Trouver un Service" to="/services" color="bg-green-500" data-tour="cvtheque-link" />
         <QuickAction icon={TrendingUp} label="Analytics" to="/settings" color="bg-orange-500" />
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Revenu Total" value="12.4M" icon={DollarSign} color="bg-green-500" trend="up" subtext="+15%" />
-        <StatCard title="Vues Profil" value="8.2k" icon={Search} color="bg-blue-500" trend="up" subtext="+5.2%" />
-        <StatCard title="Candidatures" value="45" icon={Users} color="bg-purple-500" trend="up" subtext="12 nv." />
-        <StatCard title="Commandes" value="128" icon={ShoppingBag} color="bg-orange-500" trend="down" subtext="-2%" />
+        <StatCard title="Revenu Total" value={stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString()} F` : '0 F'} icon={DollarSign} color="bg-green-500" trend="up" subtext="+0%" />
+        <StatCard title="Vues Profil" value={stats?.profileViews || 0} icon={Search} color="bg-blue-500" trend="up" subtext="+0%" />
+        <StatCard title="Candidatures" value={stats?.applicationsCount || 0} icon={Users} color="bg-purple-500" trend="up" subtext="Reçues" />
+        <StatCard title="Emplois Actifs" value={stats?.activeJobs || 0} icon={Briefcase} color="bg-orange-500" trend="up" subtext="En ligne" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -213,7 +248,7 @@ const CompanyDashboard = () => {
           <SectionHeader title="Performance Financière" />
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data}>
+              <AreaChart data={chartData.length > 0 ? chartData : []}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#10B981" stopOpacity={0.2} />
@@ -262,11 +297,37 @@ const CompanyDashboard = () => {
 };
 
 const EtablissementDashboard = () => {
-  const data = [
-    { name: 'Dev', value: 400 }, { name: 'Mkt', value: 300 },
-    { name: 'Dsn', value: 300 }, { name: 'Biz', value: 200 },
-  ];
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
+  const [stats, setStats] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [chartData, setChartData] = React.useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const { data } = await api.get('/stats/academy');
+        setStats(data.stats);
+        if (data.stats?.categoryStats) {
+          setChartData(data.stats.categoryStats);
+        } else {
+          setChartData([
+            { name: 'Dev', value: 400 },
+            { name: 'Mkt', value: 300 },
+            { name: 'Dsn', value: 300 },
+            { name: 'Biz', value: 200 },
+          ]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch academy stats", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+
+  if (loading) return <div className="p-8 text-center text-gray-500 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>;
 
   return (
     <div className="space-y-8">
@@ -278,10 +339,10 @@ const EtablissementDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Étudiants Actifs" value="1,240" icon={Users} color="bg-blue-500" trend="up" subtext="+8%" />
-        <StatCard title="Revenus Form." value="4.5M" icon={DollarSign} color="bg-green-500" trend="up" subtext="+12%" />
-        <StatCard title="Taux Complétion" value="87%" icon={CheckCircle2} color="bg-purple-500" trend="up" subtext="+2%" />
-        <StatCard title="Note Moyenne" value="4.8" icon={Star} color="bg-yellow-500" trend="up" subtext="Top 5%" />
+        <StatCard title="Étudiants Actifs" value={stats?.activeStudents || 0} icon={Users} color="bg-blue-500" trend="up" subtext="Inscrits" />
+        <StatCard title="Revenus Form." value={stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString()} F` : '0 F'} icon={DollarSign} color="bg-green-500" trend="up" subtext="Total" />
+        <StatCard title="Taux Complétion" value={stats?.completionRate ? `${stats.completionRate}%` : '0%'} icon={CheckCircle2} color="bg-purple-500" trend="up" subtext="Moyen" />
+        <StatCard title="Note Moyenne" value={stats?.averageRating ? stats.averageRating : 'N/A'} icon={Star} color="bg-yellow-500" trend="up" subtext="Avis" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -298,25 +359,24 @@ const EtablissementDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { name: 'Dev Fullstack', students: 450, revenue: '2.1M', perf: 92 },
-                  { name: 'UX/UI Design', students: 320, revenue: '1.4M', perf: 88 },
-                  { name: 'Marketing Digital', students: 210, revenue: '800k', perf: 75 },
-                ].map((course, i) => (
+                {(stats?.popularCourses || []).map((course: any, i: number) => (
                   <tr key={i} className="border-b border-gray-50 dark:border-gray-700 last:border-0">
-                    <td className="px-4 py-4 font-bold text-gray-900 dark:text-white">{course.name}</td>
-                    <td className="px-4 py-4 text-gray-600 dark:text-gray-300">{course.students}</td>
-                    <td className="px-4 py-4 text-green-600 font-medium">{course.revenue}</td>
+                    <td className="px-4 py-4 font-bold text-gray-900 dark:text-white">{course.title}</td>
+                    <td className="px-4 py-4 text-gray-600 dark:text-gray-300">{course.studentsCount}</td>
+                    <td className="px-4 py-4 text-green-600 font-medium">{course.revenue} F</td>
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
                         <div className="w-20 bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
-                          <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${course.perf}%` }}></div>
+                          <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${course.completionRate}%` }}></div>
                         </div>
-                        <span className="text-xs font-bold">{course.perf}%</span>
+                        <span className="text-xs font-bold">{course.completionRate}%</span>
                       </div>
                     </td>
                   </tr>
                 ))}
+                {(!stats?.popularCourses || stats.popularCourses.length === 0) && (
+                  <tr><td colSpan={4} className="p-4 text-center text-gray-500">Aucun cours disponible</td></tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -327,8 +387,8 @@ const EtablissementDashboard = () => {
           <div className="flex-1 min-h-[200px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={data} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {data.map((entry, index) => (
+                <Pie data={chartData.length > 0 ? chartData : [{ name: 'Aucun', value: 1 }]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                  {(chartData.length > 0 ? chartData : [{ name: 'Aucun', value: 1 }]).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -337,9 +397,9 @@ const EtablissementDashboard = () => {
             </ResponsiveContainer>
           </div>
           <div className="grid grid-cols-2 gap-2 mt-4">
-            {data.map((d, i) => (
+            {chartData.length > 0 && chartData.map((d, i) => (
               <div key={i} className="flex items-center gap-2 text-xs text-gray-500">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i] }}></div>
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
                 {d.name}
               </div>
             ))}
@@ -354,11 +414,6 @@ const EtablissementDashboard = () => {
 
 // --- MAIN WRAPPER ---
 
-import { useOnboardingStore } from '../store/useOnboardingStore';
-import { useEffect } from 'react';
-
-// ... (previous imports)
-
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -366,10 +421,13 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      if (user.roles.includes('individual')) {
+      const roles = user.roles || [];
+      if (roles.includes('individual') || user.role === 'individual') {
         startTour('candidate_dashboard');
-      } else if (user.roles.includes('company')) {
+      } else if (roles.includes('company') || user.role === 'company') {
         startTour('recruiter_dashboard');
+      } else if (roles.includes('etablissement') || user.role === 'etablissement') {
+        startTour('etablissement_dashboard');
       }
     }
   }, [user, startTour]);
@@ -401,8 +459,9 @@ export const Dashboard: React.FC = () => {
 
   // Helper to determine primary role for dashboard view
   const getPrimaryRole = () => {
-    if (user.roles.includes('company')) return 'company';
-    if (user.roles.includes('etablissement')) return 'etablissement';
+    const roles = user.roles || [];
+    if (roles.includes('company') || user.role === 'company') return 'company';
+    if (roles.includes('etablissement') || user.role === 'etablissement') return 'etablissement';
     return 'individual';
   }
   const primaryRole = getPrimaryRole();
@@ -468,7 +527,7 @@ export const Dashboard: React.FC = () => {
             <User className="w-5 h-5 text-gray-400" /> Mon Profil Public
           </Link>
           <Link to="/premium" className="mt-2 mx-2 flex items-center justify-center gap-2 p-3 bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-700 dark:to-gray-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5">
-            <Crown className="w-4 h-4 text-yellow-400" />
+            <PremiumBadge size={16} />
             <span className="text-sm font-bold">Passer Premium</span>
           </Link>
         </div>

@@ -62,6 +62,19 @@ export const login = async (email: string, password: string) => {
 };
 
 /**
+ * Register new user
+ */
+export const register = async (email: string, password: string, role: string) => {
+    // Note: apiClient (via AUTH_API_URL logic in client.ts) handles the correct port
+    const response = await axios.post(`${AUTH_API_URL}/auth/register`, {
+        email,
+        password,
+        role
+    });
+    return response.data;
+};
+
+/**
  * Logout user and clear tokens
  */
 export const logout = async () => {

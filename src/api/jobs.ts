@@ -41,5 +41,10 @@ export const jobsApi = {
     search: async (query: string) => {
         const response = await api.get('/jobs/search', { params: { q: query } });
         return response.data;
+    },
+
+    apply: async (jobId: string, data: { cvId: string; coverLetter?: string }) => {
+        const response = await api.post(`/applications/${jobId}`, data);
+        return response.data;
     }
 };

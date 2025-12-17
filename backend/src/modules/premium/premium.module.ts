@@ -25,6 +25,8 @@ import { Job, JobSchema } from '../jobs/schemas/job.schema';
 import { Application, ApplicationSchema } from '../jobs/schemas/application.schema';
 import { Post, PostSchema } from './schemas/post.schema';
 import { Notification, NotificationSchema } from '../notifications/schemas/notification.schema';
+import { Order, OrderSchema } from '../services/schemas/order.schema';
+import { Transaction, TransactionSchema } from '../services/schemas/transaction.schema';
 import { BoostController } from './boost.controller';
 import { CVthequeController } from './cvtheque.controller';
 import { StatsController } from './stats.controller';
@@ -33,6 +35,7 @@ import { CertificateController } from './certificate.controller';
 import { CertificateTemplateController } from './certificate-template.controller';
 import { JobBroadcastController } from './job-broadcast.controller';
 import { RecruitmentPackController } from './recruitment-pack.controller';
+import { RecruitmentPackService } from './services/recruitment-pack.service';
 import { BoostService } from './services/boost.service';
 import { CVthequeService } from './services/cvtheque.service';
 import { StatsService } from './services/stats.service';
@@ -42,6 +45,7 @@ import { CertificateService } from './services/certificate.service';
 import { JobBroadcastService } from './services/job-broadcast.service';
 import { MarketingController } from './marketing.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { PostsController } from './posts.controller';
 
 @Module({
     imports: [
@@ -62,6 +66,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
             { name: Application.name, schema: ApplicationSchema },
             { name: Post.name, schema: PostSchema },
             { name: Notification.name, schema: NotificationSchema },
+            { name: Order.name, schema: OrderSchema },
+            { name: Transaction.name, schema: TransactionSchema },
         ]),
         NotificationsModule,
     ],
@@ -76,6 +82,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
         CertificateTemplateController, // Added
         JobBroadcastController,
         MarketingController,
+        PostsController,
     ],
     providers: [
         PremiumService,
@@ -94,6 +101,6 @@ import { NotificationsModule } from '../notifications/notifications.module';
         PayTechService,
         PremiumGuard,
     ],
-    exports: [PremiumService, SubscriptionService, BoostService, CVthequeService, StatsService, CourseService, CertificateService, PremiumGuard, FileUploadService],
+    exports: [PremiumService, SubscriptionService, BoostService, CVthequeService, StatsService, CourseService, CertificateService, PremiumGuard, FileUploadService, RecruitmentPackService],
 })
 export class PremiumModule { }

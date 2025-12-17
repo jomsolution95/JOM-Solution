@@ -102,6 +102,13 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
 
     private extractToken(client: Socket): string | undefined {
         const [type, token] = client.handshake.headers.authorization?.split(' ') ?? [];
-        return type === 'Bearer' ? token : undefined;
+        if (type === 'Bearer') return token;
+
+        // Also check auth object (standard for socket.io client)
+        if (client.handshake.auth?.token) {
+            return client.handshake.auth.token;
+        }
+
+        return undefined;
     }
 }

@@ -28,7 +28,7 @@ async function testConnection() {
             console.log('⚠️  Received response but not expected output.');
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('❌ Gemini API Connection Failed:', error.message);
     }
 }

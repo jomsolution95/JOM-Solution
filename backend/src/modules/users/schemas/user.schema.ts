@@ -17,6 +17,9 @@ export class User {
     email!: string;
 
     @Prop({ required: false })
+    name?: string;
+
+    @Prop({ required: false })
     phone?: string;
 
     @Prop({ required: true, select: false })

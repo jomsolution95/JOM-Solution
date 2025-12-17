@@ -116,9 +116,11 @@ export const mockPosts: SocialPost[] = [
 export const mockProfiles: Record<string, User & { experience?: Experience[], education?: Education[], skills?: Skill[] }> = {
   'u1': { // Jean Michel
     id: 'u1',
+    _id: 'u1',
     name: 'Jean Michel',
     email: 'jean@test.com',
     role: 'individual',
+    roles: ['individual'],
     avatar: 'https://ui-avatars.com/api/?name=Jean+Michel&background=random',
     banner: 'https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&w=1200&q=80',
     headline: 'Plombier Certifié | Entrepreneur',
@@ -134,9 +136,11 @@ export const mockProfiles: Record<string, User & { experience?: Experience[], ed
   },
   'u2': { // Aminata Sow
     id: 'u2',
+    _id: 'u2',
     name: 'Aminata Sow',
     email: 'aminata@test.com',
     role: 'individual',
+    roles: ['individual'],
     avatar: 'https://ui-avatars.com/api/?name=Aminata+Sow&background=random',
     banner: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1200&q=80',
     headline: 'Consultante Marketing | Stratégie Digitale',
@@ -147,9 +151,11 @@ export const mockProfiles: Record<string, User & { experience?: Experience[], ed
   },
   'c1': { // Tech Solutions
     id: 'c1',
+    _id: 'c1',
     name: 'Tech Solutions SARL',
     email: 'contact@techsolutions.sn',
     role: 'company',
+    roles: ['company'],
     avatar: 'https://ui-avatars.com/api/?name=Tech+Solutions&background=0D9488&color=fff',
     banner: 'https://images.unsplash.com/photo-1504384308090-c54be3855833?auto=format&fit=crop&w=1200&q=80',
     headline: 'Leader en Transformation Digitale',
@@ -161,9 +167,11 @@ export const mockProfiles: Record<string, User & { experience?: Experience[], ed
 
   'a5': { // Institut Excellence
     id: 'a5',
+    _id: 'a5',
     name: 'Institut Excellence',
     email: 'info@institut-excellence.sn',
     role: 'etablissement',
+    roles: ['etablissement'],
     avatar: 'https://ui-avatars.com/api/?name=Institut+Excellence&background=purple&color=fff',
     banner: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=80',
     headline: 'Formation Professionnelle',
@@ -174,9 +182,11 @@ export const mockProfiles: Record<string, User & { experience?: Experience[], ed
   // Legacy mappings for robustness
   'a1': {
     id: 'a1',
+    _id: 'a1',
     name: 'Jean Michel',
     email: 'jean@test.com',
     role: 'individual',
+    roles: ['individual'],
     avatar: 'https://ui-avatars.com/api/?name=Jean+Michel&background=random',
     headline: 'Plombier Certifié',
     location: 'Dakar',

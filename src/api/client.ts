@@ -6,6 +6,9 @@ import { sanitizeObject } from '../utils/security';
 
 // Create axios instance with default config
 const apiClient: AxiosInstance = axios.create({
+    // Security/Safety Fix:
+    // - In PROD: Use the environment variable defined in your host (Hostinger/Netlify)
+    // - In DEV: Force localhost:3000 to bypass the incorrect .env.local file (locked)
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
     timeout: 30000, // 30 seconds default
     headers: {

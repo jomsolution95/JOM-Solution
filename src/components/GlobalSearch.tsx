@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Loader, TrendingUp, Clock } from 'lucide-react';
 import { useDebounce } from 'use-debounce';
+import api from '../api/client';
 import {
     globalSearch,
     searchSuggestions,
@@ -70,19 +71,74 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
         setIsLoading(true);
 
         try {
-            // Fetch results and suggestions in parallel
-            const [searchResults, searchSuggestionsList] = await Promise.all([
-                globalSearch(searchQuery, { limit: 8 }),
-                searchSuggestions(searchQuery, 5),
-            ]);
+            // 1. Static Pages Search
+            const staticPages = [
+                { id: 'dashboard', title: 'Tableau de bord', description: 'Vue d\'ensemble', path: '/dashboard', type: 'page' },
+                { id: 'jobs', title: 'Emplois', description: 'Trouver un job', path: '/jobs', type: 'page' },
+                { id: 'services', title: 'Services', description: 'Trouver un prestataire', path: '/services', type: 'services' },
+                { id: 'premium', title: 'JOM Premium', description: 'Abonnements & Boosts', path: '/premium', type: 'page' },
+                { id: 'profile', title: 'Mon Profil', description: 'Gérer mon profil', path: '/profile/me', type: 'page' },
+                { id: 'settings', title: 'Paramètres', description: 'Compte & Sécurité', path: '/settings', type: 'page' },
+                { id: 'messages', title: 'Messages', description: 'Vos conversations', path: '/messages', type: 'page' },
+                { id: 'formations', title: 'Formations', description: 'Apprendre', path: '/formations', type: 'formations' },
+            ];
 
-            setResults(searchResults.results);
-            setSuggestions(searchSuggestionsList);
+            const pageResults: SearchResult[] = staticPages
+                .filter(p =>
+                    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    p.description.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map(p => ({
+                    id: p.id,
+                    title: p.title,
+                    description: p.description,
+                    type: 'all',
+                    metadata: { path: p.path, isPage: true }
+                }));
+
+            // 2. Call backend API
+            const response = await api.get(`/search/global?q=${searchQuery}`);
+            const data = response.data;
+
+            // Transform backend format to frontend SearchResult format
+            const backendResults: SearchResult[] = [];
+
+            data.users?.forEach((u: any) => backendResults.push({
+                id: u._id,
+                title: `${u.firstName || ''} ${u.lastName || ''} ${u.name ? '(' + u.name + ')' : ''}`.trim(),
+                description: u.title || 'Utilisateur',
+                type: 'users',
+                avatar: u.avatar
+            }));
+
+            data.jobs?.forEach((j: any) => backendResults.push({
+                id: j._id,
+                title: j.title,
+                description: j.company?.name || 'Entreprise',
+                type: 'jobs'
+            }));
+
+            data.services?.forEach((s: any) => backendResults.push({
+                id: s._id,
+                title: s.title,
+                description: s.category || 'Service',
+                type: 'services',
+                image: s.images?.[0]
+            }));
+
+            data.trainings?.forEach((t: any) => backendResults.push({
+                id: t._id,
+                title: t.title,
+                description: t.level || 'Formation',
+                type: 'formations'
+            }));
+
+            setResults([...pageResults, ...backendResults]);
+            setSuggestions([]);
             setIsOpen(true);
         } catch (error) {
             console.error('Search error:', error);
             setResults([]);
-            setSuggestions([]);
         } finally {
             setIsLoading(false);
         }
@@ -109,6 +165,12 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({
         // Close dropdown
         setIsOpen(false);
         setQuery('');
+
+        // Handle Page Redirect
+        if (result.metadata?.isPage) {
+            navigate(result.metadata.path);
+            return;
+        }
 
         // Navigate based on type
         const routes: Record<SearchEntityType, string> = {

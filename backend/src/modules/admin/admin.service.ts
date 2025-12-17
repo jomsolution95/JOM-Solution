@@ -4,7 +4,7 @@ import { Model, Types } from 'mongoose';
 import { User, UserDocument, UserRole } from '../users/schemas/user.schema';
 import { Escrow, EscrowDocument } from '../services/schemas/escrow.schema';
 import { Order, OrderDocument } from '../services/schemas/order.schema';
-import { AuditLog, AuditLogDocument } from './schemas/audit-log.schema';
+import { AdminAuditLog, AdminAuditLogDocument } from './schemas/audit-log.schema';
 import { NotificationsService } from '../notifications/notifications.service';
 import { AdsService } from '../ads/ads.service';
 import { CampaignStatus } from '../ads/schemas/adCampaign.schema';
@@ -15,7 +15,7 @@ export class AdminService {
         @InjectModel(User.name) private userModel: Model<UserDocument>,
         @InjectModel(Escrow.name) private escrowModel: Model<EscrowDocument>,
         @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
-        @InjectModel(AuditLog.name) private auditLogModel: Model<AuditLogDocument>,
+        @InjectModel(AdminAuditLog.name) private auditLogModel: Model<AdminAuditLogDocument>,
         private readonly notificationsService: NotificationsService,
         private readonly adsService: AdsService,
     ) { }

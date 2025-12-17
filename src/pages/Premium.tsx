@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Check, Crown, Star, Shield, Zap, BarChart, Users, Heart, Briefcase, Megaphone, Mail, Layout, Target, MousePointer2, Bell, GraduationCap, Cloud, Sparkles, Save } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
+import { useNavigate } from 'react-router-dom';
 import { BackButton } from '../components/BackButton';
 
 // --- DATA MODELS ---
@@ -125,6 +126,7 @@ export const Premium: React.FC = () => {
     const [activeTabRole, setActiveTabRole] = useState<UserRole>(user?.role || 'company');
 
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+    const navigate = useNavigate();
 
     // Determine current active role context
     const currentRole = user ? user.role : activeTabRole;
@@ -334,7 +336,10 @@ export const Premium: React.FC = () => {
                                             Créez des CV percutants qui passent les filtres ATS et séduisent les recruteurs.
                                             Une suite d'outils professionnels pour maximiser vos chances.
                                         </p>
-                                        <button className="px-8 py-3 bg-white text-gray-900 rounded-xl font-bold shadow-lg hover:bg-gray-100 transition-colors">
+                                        <button
+                                            onClick={() => navigate('/cv-builder')}
+                                            className="px-8 py-3 bg-white text-gray-900 rounded-xl font-bold shadow-lg hover:bg-gray-100 transition-colors"
+                                        >
                                             Découvrir le Builder
                                         </button>
                                     </div>
@@ -406,7 +411,20 @@ export const Premium: React.FC = () => {
                                                 {pack.save && <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded mb-2 inline-block">{pack.save}</span>}
                                                 <div className="text-2xl font-bold text-gray-900 dark:text-white">{pack.price.toLocaleString()} F</div>
                                             </div>
-                                            <button className={`w-full py-2.5 rounded-lg font-bold text-sm mt-auto ${pack.popular ? 'bg-primary-600 text-white hover:bg-primary-700' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200'}`}>
+                                            <button
+                                                onClick={() => navigate('/premium/checkout', {
+                                                    state: {
+                                                        customItem: {
+                                                            id: `pack-${pack.count}`,
+                                                            name: pack.label + ` (${pack.count} Annonces)`,
+                                                            price: pack.price,
+                                                            features: [`${pack.count} Annonces d'emploi`, 'Valable 12 mois', 'Support prioritaire'],
+                                                            type: 'pack'
+                                                        }
+                                                    }
+                                                })}
+                                                className={`w-full py-2.5 rounded-lg font-bold text-sm mt-auto ${pack.popular ? 'bg-primary-600 text-white hover:bg-primary-700' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-200'}`}
+                                            >
                                                 Acheter
                                             </button>
                                         </div>
@@ -437,7 +455,20 @@ export const Premium: React.FC = () => {
                                                 <span className="text-sm text-gray-400">{boost.duration}</span>
                                                 <span className="font-bold text-lg">{boost.price.toLocaleString()} F</span>
                                             </div>
-                                            <button className="w-full mt-4 py-2 rounded-lg bg-white text-gray-900 font-bold text-sm hover:bg-gray-100">
+                                            <button
+                                                onClick={() => navigate('/premium/checkout', {
+                                                    state: {
+                                                        customItem: {
+                                                            id: `boost-${idx}`,
+                                                            name: boost.title,
+                                                            price: boost.price,
+                                                            features: [`Durée : ${boost.duration}`, boost.desc, 'Visibilité accrue immédiate'],
+                                                            type: 'boost'
+                                                        }
+                                                    }
+                                                })}
+                                                className="w-full mt-4 py-2 rounded-lg bg-white text-gray-900 font-bold text-sm hover:bg-gray-100"
+                                            >
                                                 Sélectionner
                                             </button>
                                         </div>
@@ -467,7 +498,10 @@ export const Premium: React.FC = () => {
                                 ))}
                             </div>
                             <div className="text-center mt-8">
-                                <button className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold hover:shadow-lg transition-all">
+                                <button
+                                    onClick={() => window.location.href = 'mailto:ads@jom-solution.com?subject=Demande de partenariat publicitaire'}
+                                    className="px-8 py-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl font-bold hover:shadow-lg transition-all"
+                                >
                                     Contacter la régie publicitaire
                                 </button>
                             </div>

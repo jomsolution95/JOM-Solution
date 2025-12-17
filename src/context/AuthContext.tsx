@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { login as apiLogin, logout as apiLogout, getCurrentUser, isAuthenticated } from '../api/auth';
+import { login as apiLogin, register as apiRegister, logout as apiLogout, getCurrentUser, isAuthenticated } from '../api/auth';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
@@ -52,8 +52,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     try {
       const data = await apiLogin(email, password);
+      // Update state immediately
       setUser(data.user);
-      toast.success('Login successful!');
+      // Persist is handled in apiLogin, but we verify here for sanity if needed
+      if (!localStorage.getItem('access_token')) {
+        throw new Error('Token not persisted');
+      }
+      toast.success('Connexion réussie !');
     } catch (error: any) {
       console.error('Login failed:', error);
       throw error;
@@ -62,21 +67,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (email: string, password: string, role: string) => {
     try {
-      // Call register API
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, role }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Registration failed');
-      }
-
-      const data = await response.json();
+      // Call register API via centralized client (handles port 3000 fix)
+      const data = await apiRegister(email, password, role);
 
       // Store tokens
       localStorage.setItem('access_token', data.access_token);
@@ -84,10 +76,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(data.user));
 
       setUser(data.user);
-      toast.success('Registration successful!');
+      toast.success('Inscription réussie !');
     } catch (error: any) {
       console.error('Registration failed:', error);
-      toast.error(error.message || 'Registration failed');
       throw error;
     }
   };

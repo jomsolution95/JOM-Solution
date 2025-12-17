@@ -1,374 +1,384 @@
-
-import React, { useState } from 'react';
-import { Search, MapPin, Briefcase, DollarSign, Clock, Building2, Filter, CheckCircle2, Upload, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Search, MapPin, Briefcase, DollarSign, Clock, Filter, ChevronRight, Building, CheckCircle, AlertCircle, X, FileText, Send, Loader } from 'lucide-react';
+import { jobsApi } from '../api/jobs';
+import { cvApi, CVData } from '../api/cv';
 import { Job } from '../types';
+import { toast } from 'react-toastify';
+import { useAuth } from '../context/AuthContext';
 
-const mockJobs: Job[] = [
-  {
-    id: '1',
-    title: 'Développeur Frontend Senior (React)',
-    company: 'Tech Solutions SARL',
-    location: 'Dakar, Sénégal',
-    type: 'CDI',
-    salary: '800k - 1.2M FCFA',
-    postedAt: 'Il y a 2 jours',
-    logo: 'https://ui-avatars.com/api/?name=Tech+Solutions&background=0D9488&color=fff',
-    description: 'Nous recherchons un développeur Frontend expérimenté pour rejoindre notre équipe dynamique. Vous serez responsable de l\'architecture et du développement de nos applications web.',
-    requirements: [
-      'Minimum 4 ans d\'expérience avec React et TypeScript',
-      'Maîtrise de Tailwind CSS et des concepts UX/UI',
-      'Expérience avec les outils de build (Vite, Webpack)',
-      'Capacité à travailler en équipe agile'
-    ]
-  },
-  {
-    id: '2',
-    title: 'Community Manager Bilingue',
-    company: 'Global Marketing Agency',
-    location: 'Abidjan, Côte d\'Ivoire',
-    type: 'CDD',
-    salary: '400k - 600k FCFA',
-    postedAt: 'Il y a 5 heures',
-    logo: 'https://ui-avatars.com/api/?name=Global+Marketing&background=blue&color=fff',
-    description: 'Gérez la présence en ligne de nos clients internationaux. Vous créerez du contenu engageant et animerez nos communautés sur les réseaux sociaux.',
-    requirements: [
-      'Excellente maîtrise du Français et de l\'Anglais',
-      'Expertise sur LinkedIn, Twitter, Instagram et TikTok',
-      'Compétences en création graphique (Canva, Photoshop)',
-      'Créativité et aisance relationnelle'
-    ]
-  },
-  {
-    id: '3',
-    title: 'Comptable Confirmé',
-    company: 'Groupe Finance Ouest',
-    location: 'Dakar, Sénégal',
-    type: 'CDI',
-    salary: '600k - 900k FCFA',
-    postedAt: 'Il y a 1 semaine',
-    logo: 'https://ui-avatars.com/api/?name=Groupe+Finance&background=purple&color=fff',
-    description: 'Assurez la tenue de la comptabilité générale et analytique. Vous participerez également à l\'élaboration des budgets et au reporting financier.',
-    requirements: [
-      'Diplôme supérieur en Comptabilité/Gestion',
-      '3 ans d\'expérience minimum en cabinet ou entreprise',
-      'Maîtrise du logiciel Sage et d\'Excel avancé',
-      'Rigueur et sens de l\'organisation'
-    ]
-  },
-  {
-    id: '4',
-    title: 'Designer UX/UI Freelance',
-    company: 'Startup Innov',
-    location: 'Télétravail',
-    type: 'Freelance',
-    salary: 'TJM 100k FCFA',
-    postedAt: 'Il y a 3 jours',
-    logo: 'https://ui-avatars.com/api/?name=Startup+Innov&background=orange&color=fff',
-    description: 'Nous cherchons un designer créatif pour repenser l\'expérience utilisateur de notre application mobile fintech.',
-    requirements: [
-      'Portfolio démontrant des projets mobiles',
-      'Maîtrise de Figma et du prototypage',
-      'Compréhension des besoins utilisateurs',
-      'Autonomie et respect des délais'
-    ]
-  },
-  {
-    id: '5',
-    title: 'Stagiaire Assistant RH',
-    company: 'BTP Construction',
-    location: 'Douala, Cameroun',
-    type: 'Stage',
-    salary: '100k FCFA (Indemnité)',
-    postedAt: 'Aujourd\'hui',
-    logo: 'https://ui-avatars.com/api/?name=BTP+Const&background=red&color=fff',
-    description: 'Assistez la DRH dans la gestion administrative du personnel et le processus de recrutement des ouvriers qualifiés.',
-    requirements: [
-      'Étudiant en Master RH ou Droit Social',
-      'Bonne capacité rédactionnelle',
-      'Discrétion et sens du service',
-      'Disponibilité immédiate pour 6 mois'
-    ]
-  }
-];
 
-const contractTypes = ['Tous', 'CDI', 'CDD', 'Freelance', 'Stage'];
+const JobSearchPage: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  // State
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
-export const Jobs: React.FC = () => {
+  // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('Tous');
-  const [selectedJob, setSelectedJob] = useState<Job | null>(mockJobs[0]);
+  const [selectedLocation, setSelectedLocation] = useState('');
+
+  // Application Modal
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [userCVs, setUserCVs] = useState<CVData[]>([]);
+  const [loadingCVs, setLoadingCVs] = useState(false);
+  const [selectedCVId, setSelectedCVId] = useState<string>('');
+  const [coverLetter, setCoverLetter] = useState('');
   const [isApplying, setIsApplying] = useState(false);
-  const [applicationSent, setApplicationSent] = useState(false);
 
-  // Mobile view state to toggle between list and details
-  const [showMobileDetails, setShowMobileDetails] = useState(false);
+  // Fetch Jobs
+  useEffect(() => {
+    fetchJobs();
+  }, [selectedType]); // Re-fetch when major filters change, or use memoized filter
 
-  const filteredJobs = mockJobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          job.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === 'Tous' || job.type === selectedType;
-    return matchesSearch && matchesType;
-  });
+  const fetchJobs = async () => {
+    setLoading(true);
+    try {
+      const params: any = {};
+      if (selectedType !== 'Tous') params.type = selectedType;
 
-  const handleJobClick = (job: Job) => {
-    setSelectedJob(job);
-    setShowMobileDetails(true);
-    setApplicationSent(false);
-    // On mobile, scroll to top of details
-    if (window.innerWidth < 1024) {
-      window.scrollTo(0, 0);
+      const data = await jobsApi.getAll(params);
+      const jobList = Array.isArray(data) ? data : (data.data || []);
+      setJobs(jobList);
+
+      // Handle deep linking or default selection
+      if (id) {
+        // Try to find in list first
+        const found = jobList.find((j: Job) => j._id === id || j.id === id);
+        if (found) {
+          setSelectedJob(found);
+        } else {
+          // Fetch individually if not in list
+          try {
+            const specificJob = await jobsApi.getOne(id);
+            if (specificJob) {
+              setSelectedJob(specificJob);
+              // Optionally add to list if not present
+              setJobs(prev => [specificJob, ...prev]);
+            }
+          } catch (e) {
+            console.error("Failed to fetch specific job", e);
+            if (jobList.length > 0) setSelectedJob(jobList[0]);
+          }
+        }
+      } else if (jobList.length > 0 && !selectedJob) {
+        setSelectedJob(jobList[0]);
+      }
+    } catch (error) {
+      console.error("Error loading jobs", error);
+      toast.error("Erreur lors du chargement des offres.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleApply = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulate API call
-    setTimeout(() => {
-      setApplicationSent(true);
-      setTimeout(() => {
-        setIsApplying(false);
-        setApplicationSent(false);
-      }, 2000);
-    }, 1500);
+  // Client-side filtering for search term/location if backend search is separate
+  // Ideally use backend search, but for hybrid approach:
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch =
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesLocation = !selectedLocation || job.location.toLowerCase().includes(selectedLocation.toLowerCase());
+
+    return matchesSearch && matchesLocation;
+  });
+
+  const handleApplyClick = async (job: Job) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setShowApplyModal(true);
+    setLoadingCVs(true);
+    try {
+      const cvs = await cvApi.getAll();
+      setUserCVs(cvs);
+      if (cvs.length > 0) setSelectedCVId(cvs[0]._id || '');
+    } catch (error) {
+      console.error("Error loading CVs", error);
+      toast.error("Impossible de charger vos CVs.");
+    } finally {
+      setLoadingCVs(false);
+    }
   };
 
+  const submitApplication = async () => {
+    if (!selectedJob || !selectedCVId) return;
+
+    setIsApplying(true);
+    try {
+      await jobsApi.apply(selectedJob.id || selectedJob._id, { // Handle id vs _id inconsistency
+        cvId: selectedCVId,
+        coverLetter
+      });
+      toast.success("Candidature envoyée avec succès !");
+      setShowApplyModal(false);
+      setCoverLetter('');
+    } catch (error: any) {
+      console.error("Apply error", error);
+      toast.error(error.response?.data?.message || "Erreur lors de l'envoi de la candidature.");
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  if (loading) return (
+    <div className="flex h-screen items-center justify-center">
+      <Loader className="w-10 h-10 text-primary-600 animate-spin" />
+    </div>
+  );
+
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header & Filters */}
-        <div className="mb-8 space-y-4">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Offres d'emploi</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Trouvez le job qui correspond à vos ambitions.</p>
-                </div>
-                <button className="md:hidden px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium">
-                    <Filter className="w-4 h-4 inline mr-2"/> Filtres
-                </button>
+    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
+      {/* Header / Search Bar */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Rechercher un poste, une entreprise, un mot-clé..."
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="w-full md:w-48 relative">
+              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Ville, Région"
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white"
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+              />
+            </div>
+            <div className="w-full md:w-48">
+              <select
+                className="w-full px-4 py-2.5 bg-gray-100 dark:bg-gray-700 border-transparent focus:bg-white dark:focus:bg-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none appearance-none dark:text-white"
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+              >
+                <option value="Tous">Tous les types</option>
+                <option value="CDI">CDI</option>
+                <option value="CDD">CDD</option>
+                <option value="Freelance">Freelance</option>
+                <option value="Stage">Stage</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col lg:flex-row gap-8 h-[calc(100vh-180px)]">
+
+          {/* Job List */}
+          <div className="w-full lg:w-1/3 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {filteredJobs.length} offres trouvées
+              </h2>
+              <button className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+                <Filter className="w-4 h-4" /> Filtres
+              </button>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <input
-                        type="text"
-                        placeholder="Intitulé, mot-clé ou entreprise"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none text-sm"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="relative w-full sm:w-64">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <input
-                        type="text"
-                        placeholder="Ville ou Pays"
-                        className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 outline-none text-sm"
-                    />
-                </div>
-            </div>
-
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                {contractTypes.map(type => (
-                <button
-                    key={type}
-                    onClick={() => setSelectedType(type)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors border ${
-                    selectedType === type
-                        ? 'bg-primary-600 text-white border-primary-600'
-                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-primary-500'
+            <div className="space-y-3">
+              {filteredJobs.map((job) => (
+                <div
+                  key={job.id || job._id}
+                  onClick={() => setSelectedJob(job)}
+                  className={`p-4 rounded-xl border cursor-pointer transition-all ${selectedJob && (selectedJob.id === job.id || selectedJob._id === job._id)
+                    ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800 ring-1 ring-primary-500'
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md'
                     }`}
                 >
-                    {type}
-                </button>
-                ))}
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-gray-900 dark:text-white line-clamp-1">{job.title}</h3>
+                    <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 whitespace-nowrap ml-2">
+                      {job.type}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-1">
+                    <Building className="w-3 h-3" /> {job.company}
+                  </p>
+                  <div className="flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    <span className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                      <MapPin className="w-3 h-3" /> {job.location}
+                    </span>
+                    <span className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                      <DollarSign className="w-3 h-3" /> {job.salary}
+                    </span>
+                  </div>
+                  <div className="mt-3 text-xs text-gray-400">
+                    Publié le {new Date(job.postedAt || job.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+              {filteredJobs.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <div className="bg-gray-100 dark:bg-gray-800 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p>Aucune offre ne correspond à vos critères.</p>
+                </div>
+              )}
             </div>
-        </div>
+          </div>
 
-        {/* Main Content - Split View */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
-          {/* Left Column: Job List */}
-          <div className={`lg:col-span-5 flex flex-col gap-4 ${showMobileDetails ? 'hidden lg:flex' : 'flex'}`}>
-            {filteredJobs.map(job => (
-              <div 
-                key={job.id}
-                onClick={() => handleJobClick(job)}
-                className={`bg-white dark:bg-gray-800 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-md ${
-                  selectedJob?.id === job.id 
-                    ? 'border-primary-500 ring-1 ring-primary-500' 
-                    : 'border-gray-200 dark:border-gray-700 hover:border-primary-300'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <img src={job.logo} alt={job.company} className="w-12 h-12 rounded-lg object-cover" />
-                  <div className="flex-1">
-                    <h3 className={`font-semibold text-base ${selectedJob?.id === job.id ? 'text-primary-600 dark:text-primary-400' : 'text-gray-900 dark:text-white'}`}>
-                        {job.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{job.company}</p>
-                    <div className="flex flex-wrap items-center gap-y-2 gap-x-3 mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/> {job.location}</span>
-                        <span className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-gray-700 dark:text-gray-300 font-medium">
-                            {job.type}
-                        </span>
-                        <span className="text-green-600 dark:text-green-400 font-medium">{job.salary}</span>
+          {/* Job Details */}
+          <div className="hidden lg:block w-full lg:w-2/3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full shadow-sm">
+            {selectedJob ? (
+              <>
+                {/* Header */}
+                <div className="p-8 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-gray-50/50 to-white dark:from-gray-800/50 dark:to-gray-800">
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-4">
+                      <div className="w-16 h-16 bg-white rounded-xl shadow-sm border border-gray-100 dark:border-gray-600 p-2 flex items-center justify-center">
+                        {selectedJob.logo ? (
+                          <img src={selectedJob.logo} alt={selectedJob.company} className="w-full h-full object-contain" />
+                        ) : (
+                          <Building className="w-8 h-8 text-gray-400" />
+                        )}
+                      </div>
+                      <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{selectedJob.title}</h1>
+                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                          <span className="font-medium">{selectedJob.company}</span>
+                          <span>•</span>
+                          <span className="text-sm">{selectedJob.location}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="mt-3 text-xs text-gray-400 flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> {job.postedAt}
+                    <button
+                      onClick={() => handleApplyClick(selectedJob)}
+                      className="bg-primary-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/30 flex items-center gap-2"
+                    >
+                      <Send className="w-4 h-4" /> Postuler
+                    </button>
+                  </div>
+
+                  <div className="flex gap-4 mt-6">
+                    <div className="flex items-center gap-2 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-800">
+                      <Briefcase className="w-4 h-4" /> {selectedJob.type}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 px-3 py-1.5 rounded-lg border border-green-100 dark:border-green-800">
+                      <DollarSign className="w-4 h-4" /> {selectedJob.salary}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 px-3 py-1.5 rounded-lg border border-orange-100 dark:border-orange-800">
+                      <Clock className="w-4 h-4" /> {new Date(selectedJob.postedAt || selectedJob.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            {filteredJobs.length === 0 && (
-                <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                    <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500">Aucune offre trouvée</p>
-                </div>
-            )}
-          </div>
 
-          {/* Right Column: Job Details (Sticky on Desktop) */}
-          <div className={`lg:col-span-7 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 lg:sticky lg:top-24 transition-all ${showMobileDetails ? 'flex fixed inset-0 z-50 lg:static overflow-y-auto' : 'hidden lg:flex'}`}>
-            
-            {/* Mobile Close Button */}
-            {showMobileDetails && (
-                <button 
-                    onClick={() => setShowMobileDetails(false)} 
-                    className="lg:hidden absolute top-4 left-4 p-2 bg-gray-100 dark:bg-gray-700 rounded-full text-gray-600 dark:text-gray-300 z-10"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-            )}
-
-            {selectedJob ? (
-                <div className="w-full flex flex-col">
-                    {/* Job Header */}
-                    <div className="p-6 md:p-8 border-b border-gray-100 dark:border-gray-700">
-                         <div className="w-16 h-16 rounded-xl bg-gray-100 dark:bg-gray-700 mb-4 overflow-hidden">
-                             <img src={selectedJob.logo} alt={selectedJob.company} className="w-full h-full object-cover" />
-                         </div>
-                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{selectedJob.title}</h2>
-                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                             <span className="flex items-center gap-1 font-medium text-gray-900 dark:text-white"><Building2 className="w-4 h-4"/> {selectedJob.company}</span>
-                             <span className="hidden sm:block">•</span>
-                             <span className="flex items-center gap-1"><MapPin className="w-4 h-4"/> {selectedJob.location}</span>
-                             <span className="hidden sm:block">•</span>
-                             <span className="flex items-center gap-1"><Briefcase className="w-4 h-4"/> {selectedJob.type}</span>
-                         </div>
-                         
-                         <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6">
-                            <div className="flex items-center gap-2 text-lg font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-4 py-2 rounded-lg w-fit">
-                                <DollarSign className="w-5 h-5" />
-                                {selectedJob.salary}
-                            </div>
-                             <button 
-                                onClick={() => setIsApplying(true)}
-                                className="px-8 py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-lg transition-colors shadow-lg shadow-primary-500/30"
-                             >
-                                 Postuler Maintenant
-                             </button>
-                         </div>
+                {/* Content */}
+                <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
+                  <div className="prose dark:prose-invert max-w-none">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">À propos du poste</h3>
+                    <div className="whitespace-pre-wrap text-gray-600 dark:text-gray-300 mb-8 p-4 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+                      {selectedJob.description}
                     </div>
 
-                    {/* Job Body */}
-                    <div className="p-6 md:p-8 flex-1">
-                        <div className="prose dark:prose-invert max-w-none">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Description du poste</h3>
-                            <p className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-                                {selectedJob.description}
-                            </p>
-
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Prérequis & Compétences</h3>
-                            <ul className="space-y-2 mb-6">
-                                {selectedJob.requirements.map((req, index) => (
-                                    <li key={index} className="flex items-start gap-2 text-gray-600 dark:text-gray-300">
-                                        <CheckCircle2 className="w-5 h-5 text-primary-500 shrink-0 mt-0.5" />
-                                        <span>{req}</span>
-                                    </li>
-                                ))}
-                            </ul>
-
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Avantages</h3>
-                            <div className="flex flex-wrap gap-2">
-                                {['Télétravail possible', 'Mutuelle santé', 'Primes de performance', 'Formation continue'].map((tag, i) => (
-                                    <span key={i} className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-sm">
-                                        {tag}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Prérequis</h3>
+                    {selectedJob.requirements && selectedJob.requirements.length > 0 ? (
+                      <ul className="space-y-2 mb-8">
+                        {selectedJob.requirements.map((req, index) => (
+                          <li key={index} className="flex items-start gap-3 text-gray-600 dark:text-gray-300">
+                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+                            {req}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-gray-500 italic mb-8">Aucun prérequis spécifié.</p>
+                    )}
+                  </div>
                 </div>
+              </>
             ) : (
-                <div className="flex flex-col items-center justify-center h-96 text-gray-400">
-                    <Briefcase className="w-16 h-16 mb-4 opacity-50" />
-                    <p>Sélectionnez une offre pour voir les détails</p>
-                </div>
-            )}
-
-            {/* Application Modal Overlay */}
-            {isApplying && (
-                <div className="absolute inset-0 bg-white dark:bg-gray-800 z-50 flex flex-col p-6 animate-in slide-in-from-bottom-10 duration-300 rounded-xl">
-                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Postuler chez {selectedJob?.company}</h3>
-                        <button onClick={() => setIsApplying(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
-                            <X className="w-6 h-6 text-gray-500" />
-                        </button>
-                     </div>
-
-                     {applicationSent ? (
-                         <div className="flex-1 flex flex-col items-center justify-center text-center animate-in zoom-in duration-300">
-                             <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
-                                 <CheckCircle2 className="w-10 h-10 text-green-600" />
-                             </div>
-                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Candidature Envoyée !</h3>
-                             <p className="text-gray-500">Bonne chance ! L'entreprise vous contactera bientôt.</p>
-                         </div>
-                     ) : (
-                        <form onSubmit={handleApply} className="space-y-4 max-w-lg mx-auto w-full overflow-y-auto custom-scrollbar">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prénom</label>
-                                    <input type="text" required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom</label>
-                                    <input type="text" required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700" />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                                <input type="email" required className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">CV (PDF)</label>
-                                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer">
-                                    <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                                    <p className="text-sm text-gray-500">Cliquez pour uploader ou glissez votre fichier</p>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lettre de motivation (Optionnel)</label>
-                                <textarea rows={4} className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 resize-none"></textarea>
-                            </div>
-                            <div className="pt-4">
-                                <button type="submit" className="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-lg">
-                                    Envoyer ma candidature
-                                </button>
-                            </div>
-                        </form>
-                     )}
-                </div>
+              <div className="flex flex-col items-center justify-center h-full text-gray-400 p-8 text-center">
+                <Briefcase className="w-16 h-16 mb-4 opacity-20" />
+                <h3 className="text-xl font-medium mb-2">Sélectionnez une offre</h3>
+                <p>Cliquez sur une offre d'emploi à gauche pour voir les détails et postuler.</p>
+              </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* Apply Modal */}
+      {showApplyModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold dark:text-white">Postuler à {selectedJob?.title}</h3>
+              <button onClick={() => setShowApplyModal(false)} className="text-gray-400 hover:text-gray-600"><X /></button>
+            </div>
+
+            {loadingCVs ? (
+              <div className="py-8 text-center"><Loader className="w-8 h-8 animate-spin mx-auto text-primary-600" /></div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sélectionnez votre CV</label>
+                  {userCVs.length > 0 ? (
+                    <div className="grid gap-2">
+                      {userCVs.map(cv => (
+                        <div
+                          key={cv._id}
+                          onClick={() => setSelectedCVId(cv._id || '')}
+                          className={`p-3 rounded-lg border cursor-pointer flex items-center gap-3 ${selectedCVId === cv._id ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                        >
+                          <FileText className={`w-5 h-5 ${selectedCVId === cv._id ? 'text-primary-600' : 'text-gray-400'}`} />
+                          <div className="flex-1">
+                            <div className="font-medium dark:text-white">{cv.title}</div>
+                            <div className="text-xs text-gray-500">Modifié le {new Date(cv.updatedAt || new Date()).toLocaleDateString()}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center p-4 bg-yellow-50 text-yellow-800 rounded-lg">
+                      <AlertCircle className="w-5 h-5 mx-auto mb-2" />
+                      Vous n'avez pas encore de CV. <button onClick={() => navigate('/cv-builder')} className="underline font-bold">Créez-en un maintenant</button>.
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Lettre de motivation (Optionnel)</label>
+                  <textarea
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white h-32 resize-none focus:ring-2 focus:ring-primary-500 outline-none"
+                    placeholder="Expliquez pourquoi vous êtes le meilleur candidat..."
+                    value={coverLetter}
+                    onChange={(e) => setCoverLetter(e.target.value)}
+                  ></textarea>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button onClick={() => setShowApplyModal(false)} className="flex-1 py-3 border border-gray-300 dark:border-gray-600 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-white">Annuler</button>
+                  <button
+                    onClick={submitApplication}
+                    disabled={!selectedCVId || isApplying}
+                    className="flex-1 py-3 bg-primary-600 text-white rounded-lg font-bold hover:bg-primary-700 disabled:bg-gray-400 flex items-center justify-center gap-2"
+                  >
+                    {isApplying ? <Loader className="w-5 h-5 animate-spin" /> : 'Envoyer ma candidature'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default Jobs;
+export default JobSearchPage;

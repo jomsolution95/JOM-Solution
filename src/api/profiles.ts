@@ -1,6 +1,4 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import apiClient from './client';
 
 export interface ProfileDocument {
     name: string;
@@ -11,17 +9,22 @@ export interface ProfileDocument {
 
 export const profilesApi = {
     getMe: async () => {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`${API_URL}/profiles/me`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await apiClient.get('/profiles/me');
         return response.data;
     },
 
     addDocument: async (document: ProfileDocument) => {
-        const token = localStorage.getItem('token');
-        const response = await axios.post(`${API_URL}/profiles/me/documents`, document, {
-             headers: { Authorization: `Bearer ${token}` }
+        const response = await apiClient.post('/profiles/me/documents', document);
+        return response.data;
+    },
+
+    uploadAvatar: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await apiClient.post('/profiles/avatar', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
         });
         return response.data;
     }

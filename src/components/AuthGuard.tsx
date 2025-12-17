@@ -36,7 +36,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-primary-50 dark:bg-primary-900/20 mb-6">
           <Lock className="h-10 w-10 text-primary-600 dark:text-primary-400" />
         </div>
-        
+
         <div>
           <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">
             Accès Réservé
@@ -70,9 +70,9 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
             Créer un compte gratuit
           </Link>
         </div>
-        
+
         <div className="mt-6 text-xs text-gray-400">
-           Rejoignez plus de 10,000 professionnels en Afrique.
+          Rejoignez plus de 10,000 professionnels en Afrique.
         </div>
       </div>
     </div>

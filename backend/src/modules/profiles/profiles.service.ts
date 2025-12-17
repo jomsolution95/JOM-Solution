@@ -89,6 +89,8 @@ export class ProfilesService {
         const filter: any = {};
         if (q) {
             filter.$or = [
+                { firstName: { $regex: q, $options: 'i' } },
+                { lastName: { $regex: q, $options: 'i' } },
                 { title: { $regex: q, $options: 'i' } },
                 { bio: { $regex: q, $options: 'i' } },
                 { 'skills.name': { $regex: q, $options: 'i' } },

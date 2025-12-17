@@ -53,6 +53,24 @@ export class AcademyController {
     }
 
     /**
+     * Get public catalog (published courses)
+     */
+    @Get('catalog')
+    async getCatalog(@Query() query: any) {
+        const courses = await this.courseService.getAllPublishedCourses(query);
+        return { courses };
+    }
+
+    /**
+     * Get student's enrolled courses
+     */
+    @Get('my-courses')
+    async getMyCourses(@Request() req: any) {
+        const courses = await this.courseService.getStudentEnrolledCourses(req.user.userId);
+        return { courses };
+    }
+
+    /**
      * Get single course
      */
     @Get('courses/:id')

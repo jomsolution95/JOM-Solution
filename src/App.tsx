@@ -41,6 +41,10 @@ const Billing = lazy(() => import('./pages/Billing'));
 const Settings = lazy(() => import('./pages/Settings'));
 const SuperAdminLogin = lazy(() => import('./pages/SuperAdminLogin'));
 const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
+const MyLearning = lazy(() => import('./pages/MyLearning'));
+const CoursePlayer = lazy(() => import('./pages/CoursePlayer').then(module => ({ default: module.CoursePlayer })));
+const MyCertificates = lazy(() => import('./pages/MyCertificates'));
+const CertificateVerification = lazy(() => import('./pages/CertificateVerification').then(module => ({ default: module.CertificateVerification })));
 
 import { Facebook, Twitter, Linkedin, Instagram, Mail, ArrowRight, Heart, Check } from 'lucide-react';
 
@@ -97,10 +101,17 @@ const MainLayout: React.FC = () => {
             {/* Protected Routes */}
             <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
             <Route path="/services" element={<AuthGuard><Services /></AuthGuard>} />
+            <Route path="/services/:serviceId" element={<AuthGuard><Order /></AuthGuard>} />
             <Route path="/formations" element={<AuthGuard><Formations /></AuthGuard>} />
+            <Route path="/formations/:id" element={<AuthGuard><Formations /></AuthGuard>} />
             <Route path="/jobs" element={<AuthGuard><Jobs /></AuthGuard>} />
+            <Route path="/jobs/:id" element={<AuthGuard><Jobs /></AuthGuard>} />
             <Route path="/jobs/create" element={<AuthGuard><CreateJob /></AuthGuard>} />
             <Route path="/formations/create" element={<AuthGuard><CreateCourse /></AuthGuard>} />
+            <Route path="/my-learning" element={<AuthGuard><MyLearning /></AuthGuard>} />
+            <Route path="/learning/:courseId" element={<AuthGuard><CoursePlayer /></AuthGuard>} />
+            <Route path="/my-certificates" element={<AuthGuard><MyCertificates /></AuthGuard>} />
+            <Route path="/verify-certificate/:code" element={<CertificateVerification />} />
             <Route path="/academy/students" element={<AuthGuard><StudentsPage /></AuthGuard>} />
             <Route path="/academy/marketing" element={<AuthGuard><MarketingPage /></AuthGuard>} />
             <Route path="/academy/certificates" element={<AuthGuard><CertificateEditor /></AuthGuard>} />

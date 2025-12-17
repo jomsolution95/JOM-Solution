@@ -1,14 +1,14 @@
 
 import { Controller, Post, Body, UseGuards, Request, BadRequestException, Param } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { AccessTokenGuard } from '../auth/guards/at.guard';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Training, TrainingDocument } from './schemas/training.schema';
-import { EmailService } from '../../notifications/email.service';
+import { EmailService } from '../notifications/email.service';
 import { StudentProgress, StudentProgressDocument } from './schemas/studentProgress.schema';
 
 @Controller('academy/marketing')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AccessTokenGuard)
 export class MarketingController {
     constructor(
         @InjectModel(Training.name) private trainingModel: Model<TrainingDocument>,

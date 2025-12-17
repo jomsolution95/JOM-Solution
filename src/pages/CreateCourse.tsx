@@ -195,7 +195,10 @@ export const CreateCourse: React.FC = () => {
                 }
             }
 
-            toast.success('Cours créé avec succès !');
+            // 3. Publish Course if requested (Implicitly requested by clicking "Publier")
+            await api.put(`/academy/courses/${courseId}`, { published: true });
+
+            toast.success('Cours créé et publié avec succès !');
             navigate('/formations'); // Or redirect to dashboard/mylms
         } catch (error: any) {
             console.error(error);
@@ -362,8 +365,8 @@ export const CreateCourse: React.FC = () => {
                                             <div key={lessonIdx} className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-100 dark:border-gray-700 flex flex-col gap-3">
                                                 <div className="flex items-center gap-3">
                                                     <div className={`p-2 rounded-lg ${lesson.type === 'video' ? 'bg-blue-100 text-blue-600' :
-                                                            lesson.type === 'live_session' ? 'bg-red-100 text-red-600' :
-                                                                'bg-orange-100 text-orange-600'
+                                                        lesson.type === 'live_session' ? 'bg-red-100 text-red-600' :
+                                                            'bg-orange-100 text-orange-600'
                                                         }`}>
                                                         {lesson.type === 'video' ? <Video className="w-4 h-4" /> :
                                                             lesson.type === 'live_session' ? <Video className="w-4 h-4" /> :

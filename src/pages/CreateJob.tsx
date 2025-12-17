@@ -6,6 +6,7 @@ import { jobsApi } from '../api/jobs';
 import { toast } from 'react-toastify';
 import { AutoBroadcastToggle } from '../components/AutoBroadcastToggle';
 import { BackButton } from '../components/BackButton';
+import { PremiumBadge } from '../components/PremiumBadge';
 
 const jobTypes = [
     'CDI',
@@ -220,8 +221,8 @@ export const CreateJob: React.FC = () => {
                                 </li>
                                 <li className="flex justify-between">
                                     <span>Diffusion</span>
-                                    <span className={`font-medium ${autoBroadcast ? 'text-primary-600' : 'text-gray-500'}`}>
-                                        {autoBroadcast ? 'Automatique (Premium)' : 'Standard'}
+                                    <span className={`font-medium flex items-center gap-1 ${autoBroadcast ? 'text-primary-600' : 'text-gray-500'}`}>
+                                        {autoBroadcast ? <><PremiumBadge size={14} /> Automatique</> : 'Standard'}
                                     </span>
                                 </li>
                             </ul>
