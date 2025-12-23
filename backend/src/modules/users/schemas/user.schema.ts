@@ -1,4 +1,4 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory, raw } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
@@ -21,6 +21,9 @@ export class User {
 
     @Prop({ required: false })
     phone?: string;
+
+    @Prop({ required: false })
+    avatar?: string;
 
     @Prop({ required: true, select: false })
     passwordHash!: string;
@@ -71,6 +74,39 @@ export class User {
         github?: string;
         twitter?: string;
         website?: string;
+    };
+
+    @Prop(raw({
+        privacy: {
+            profileVisibility: { type: String, enum: ['public', 'connected', 'private'], default: 'public' },
+            showEmail: { type: Boolean, default: false },
+            showPhone: { type: Boolean, default: false },
+            ghostMode: { type: Boolean, default: false },
+            blockedUsers: [{ type: String }]
+        },
+        communications: {
+            messagePermission: { type: String, enum: ['everyone', 'connections', 'none'], default: 'everyone' }
+        },
+        notifications: {
+            email: { type: Object, default: { messages: true, jobs: true, news: true } },
+            push: { type: Object, default: { messages: true, jobs: true } }
+        }
+    }))
+    settings?: {
+        privacy?: {
+            profileVisibility?: string;
+            showEmail?: boolean;
+            showPhone?: boolean;
+            ghostMode?: boolean;
+            blockedUsers?: string[];
+        };
+        communications?: {
+            messagePermission?: string;
+        };
+        notifications?: {
+            email?: { messages?: boolean; jobs?: boolean; news?: boolean };
+            push?: { messages?: boolean; jobs?: boolean };
+        };
     };
 
     @Prop({ select: false })

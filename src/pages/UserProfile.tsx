@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Experience, Education, Skill, SocialPost } from '../types';
 import { FeedPost } from '../components/FeedPost';
 import api from '../api/client';
-import { MapPin, Globe, Briefcase, GraduationCap, Plus, MessageCircle, Share2 } from 'lucide-react';
+import { MapPin, Globe, Briefcase, GraduationCap, Plus, MessageCircle, Share2, Linkedin, Github, Twitter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { BackButton } from '../components/BackButton';
 
@@ -18,12 +18,25 @@ export const UserProfile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+
   useEffect(() => {
-    if (userId) {
-      loadProfile(userId);
+    // Determine the ID to load: param ID or current user ID
+    const targetId = userId || currentUser?.id || currentUser?._id;
+
+    if (targetId) {
+      loadProfile(targetId);
       loadSimilarProfiles();
+      loadFollowStatus(targetId);
+      loadFollowersCount(targetId);
+    } else {
+      // If no ID at all, and no current user, we can't show anything.
+      // Usually protected route prevents this, but for safety:
+      setLoading(false);
+      setError("Impossible d'identifier le profil à afficher.");
     }
-  }, [userId]);
+  }, [userId, currentUser]);
 
   const loadProfile = async (id: string) => {
     setLoading(true);
@@ -39,7 +52,9 @@ export const UserProfile: React.FC = () => {
         id: data.user?._id || data._id, // Handle populated user
         name: data.displayName || `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Utilisateur',
         role: (data.user?.roles && data.user.roles[0]) ? data.user.roles[0] : 'individual',
-        avatar: data.avatarUrl || `https://ui-avatars.com/api/?name=${data.firstName}+${data.lastName}`,
+        avatar: data.avatarUrl?.startsWith('/')
+          ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'}${data.avatarUrl}`
+          : (data.avatarUrl || `https://ui-avatars.com/api/?name=${data.firstName}+${data.lastName}`),
         headline: data.bio?.substring(0, 50) || (data.user?.roles?.includes('company') ? 'Entreprise' : 'Membre JOM'),
         location: data.location || 'Localisation non renseignée',
         about: data.bio || '',
@@ -63,7 +78,10 @@ export const UserProfile: React.FC = () => {
           endDate: e.year
         })) || [],
         skills: data.skills?.map((s: string) => ({ name: s, endorsements: 0 })) || [],
-        banner: null // Add banner to schema if needed
+        socialLinks: data.socialLinks || data.user?.socialLinks || {},
+        banner: data.coverUrl?.startsWith('/')
+          ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'}${data.coverUrl}`
+          : (data.coverUrl || null)
       };
 
       setProfile(formattedProfile);
@@ -97,6 +115,25 @@ export const UserProfile: React.FC = () => {
     }
   };
 
+  const loadFollowStatus = async (id: string) => {
+    if (!currentUser) return;
+    try {
+      const res = await api.get(`/cvtheque/favorites/${id}/check`);
+      setIsFollowing(res.data.isFavorite);
+    } catch (err) {
+      console.error('Error checking follow status', err);
+    }
+  };
+
+  const loadFollowersCount = async (id: string) => {
+    try {
+      const res = await api.get(`/cvtheque/followers/${id}/count`);
+      setFollowersCount(res.data.count);
+    } catch (err) {
+      console.error('Error loading followers count', err);
+    }
+  };
+
   const loadSimilarProfiles = async () => {
     try {
       // Just fetch recent profiles as "Similar" for now
@@ -110,6 +147,38 @@ export const UserProfile: React.FC = () => {
       setSimilarProfiles(profiles);
     } catch (e) {
       console.log("Error loading similar profiles", e);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!profile) return;
+    try {
+      if (isFollowing) {
+        await api.delete(`/cvtheque/favorites/${profile.id}`);
+        setIsFollowing(false);
+        setFollowersCount(prev => Math.max(0, prev - 1));
+      } else {
+        await api.post('/cvtheque/favorites', { profileId: profile.id });
+        setIsFollowing(true);
+        setFollowersCount(prev => prev + 1);
+      }
+    } catch (err) {
+      console.error('Action failed', err);
+    }
+  };
+
+  const handleMessage = async () => {
+    if (!profile) return;
+    try {
+      // Create conversation
+      const res = await api.post('/messaging/conversations', {
+        participants: [profile.id]
+      });
+      navigate(`/messaging/${res.data._id}`);
+    } catch (err) {
+      console.error('Failed to start conversation', err);
+      // Fallback: navigate to messaging root
+      navigate('/messaging');
     }
   };
 
@@ -183,18 +252,36 @@ export const UserProfile: React.FC = () => {
                 <p className="text-gray-600 dark:text-gray-300 text-base font-medium">{profile.headline}</p>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mt-2">
                   <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {profile.location}</span>
-                  {profile.website && <span className="flex items-center gap-1 text-primary-600"><Globe className="w-4 h-4" /> <a href={`https://${profile.website}`} target="_blank" rel="noreferrer">{profile.website}</a></span>}
-                  <span className="flex items-center gap-1 text-primary-600 font-medium cursor-pointer hover:underline">500+ relations</span>
+                  {profile.website && <span className="flex items-center gap-1 text-primary-600"><Globe className="w-4 h-4" /> <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" rel="noreferrer" className="hover:underline">Site web</a></span>}
+
+                  {/* Social Links */}
+                  {profile.socialLinks?.linkedin && (
+                    <a href={profile.socialLinks.linkedin} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-[#0A66C2] transition-colors"><Linkedin className="w-5 h-5" /></a>
+                  )}
+                  {profile.socialLinks?.github && (
+                    <a href={profile.socialLinks.github} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"><Github className="w-5 h-5" /></a>
+                  )}
+                  {profile.socialLinks?.twitter && (
+                    <a href={profile.socialLinks.twitter} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-[#1DA1F2] transition-colors"><Twitter className="w-5 h-5" /></a>
+                  )}
+
+                  <span className="flex items-center gap-1 text-primary-600 font-medium cursor-pointer hover:underline ml-auto md:ml-0">{followersCount} relations</span>
                 </div>
               </div>
 
               <div className="flex gap-3 mt-4 md:mt-4">
                 {currentUser?._id !== profile.id && currentUser?.id !== profile.id ? (
                   <>
-                    <button className="bg-primary-600 hover:bg-primary-700 text-white px-6 py-1.5 rounded-full font-bold transition-colors flex items-center gap-2">
-                      <Plus className="w-5 h-5" /> Suivre
+                    <button
+                      onClick={handleFollow}
+                      className={`${isFollowing ? 'bg-gray-200 text-gray-800' : 'bg-primary-600 text-white hover:bg-primary-700'} px-6 py-1.5 rounded-full font-bold transition-colors flex items-center gap-2`}
+                    >
+                      {isFollowing ? 'Suivi' : <><Plus className="w-5 h-5" /> Suivre</>}
                     </button>
-                    <button className="border border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 px-6 py-1.5 rounded-full font-bold transition-colors flex items-center gap-2">
+                    <button
+                      onClick={handleMessage}
+                      className="border border-primary-600 text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 px-6 py-1.5 rounded-full font-bold transition-colors flex items-center gap-2"
+                    >
                       <MessageCircle className="w-5 h-5" /> Message
                     </button>
                   </>

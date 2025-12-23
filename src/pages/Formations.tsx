@@ -4,9 +4,10 @@ import { Search, Filter, Star, Users, Clock, BookOpen, GraduationCap, Loader, X,
 import { Training } from '../types';
 import api from '../api/client';
 import { toast } from 'react-toastify';
+import { TRAINING_CATEGORIES } from '../constants/categories';
 import { useParams, useNavigate } from 'react-router-dom';
 
-const categories = ['Tous', 'Informatique', 'Agriculture', 'Marketing', 'Business', 'Design', 'Autre'];
+const categories = ['Tous', ...TRAINING_CATEGORIES];
 
 export const Formations: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -121,8 +122,8 @@ export const Formations: React.FC = () => {
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-primary-500'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-primary-500'
                   }`}
               >
                 {cat}
@@ -176,7 +177,7 @@ export const Formations: React.FC = () => {
                     {training.level && (
                       <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700/50 px-2 py-1 rounded">
                         <span className={`w-2 h-2 rounded-full ${training.level === 'Débutant' ? 'bg-green-500' :
-                            training.level === 'Intermédiaire' ? 'bg-yellow-500' : 'bg-red-500'
+                          training.level === 'Intermédiaire' ? 'bg-yellow-500' : 'bg-red-500'
                           }`}></span>
                         {training.level}
                       </div>

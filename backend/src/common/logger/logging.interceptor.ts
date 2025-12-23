@@ -20,7 +20,16 @@ export class LoggingInterceptor implements NestInterceptor {
                         this.logger.log(`${method} ${url} ${res.statusCode} - ${Date.now() - now}ms`);
                     },
                     error: (err) => {
-                        this.logger.error(`${method} ${url} - ${Date.now() - now}ms - Error: ${err.message}`);
+                        let details = err.message;
+                        if (typeof err.getResponse === 'function') {
+                            const response = err.getResponse();
+                            if (typeof response === 'object' && response !== null) {
+                                details = JSON.stringify(response);
+                            } else {
+                                details = String(response);
+                            }
+                        }
+                        this.logger.error(`${method} ${url} - ${Date.now() - now}ms - Error: ${details}`);
                     }
                 }),
             );

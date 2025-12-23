@@ -1,10 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, User, Loader2, Minimize2, Maximize2 } from 'lucide-react';
-import axios from 'axios';
+import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 interface Message {
     id: string;
@@ -14,7 +12,7 @@ interface Message {
 }
 
 export const UserChatWidget: React.FC = () => {
-    const { user, token } = useAuth();
+    const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [isMinimized, setIsMinimized] = useState(false);
     const [input, setInput] = useState('');
@@ -41,9 +39,7 @@ export const UserChatWidget: React.FC = () => {
     const fetchHistory = async () => {
         setIsLoading(true);
         try {
-            const res = await axios.get(`${API_URL}/ai/history`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/ai/history');
             // Map DB messages to UI
             const history = res.data.map((msg: any) => ({
                 id: msg._id,
@@ -56,7 +52,7 @@ export const UserChatWidget: React.FC = () => {
                 setMessages([{
                     id: 'welcome',
                     role: 'assistant',
-                    content: `Bonjour ${user?.firstName} ! Je suis l'assistant JOM. Comment puis-je vous aider aujourd'hui ?`,
+                    content: `Bonjour ${user?.name?.split(' ')[0] || 'User'} ! Je suis l'assistant JOM. Comment puis-je vous aider aujourd'hui ?`,
                     timestamp: new Date()
                 }]);
             } else {
@@ -85,10 +81,7 @@ export const UserChatWidget: React.FC = () => {
         setIsLoading(true);
 
         try {
-            const res = await axios.post(`${API_URL}/ai/chat`,
-                { message: userMsg.content },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const res = await api.post('/ai/chat', { message: userMsg.content });
 
             const aiMsg: Message = {
                 id: (Date.now() + 1).toString(),
@@ -98,6 +91,7 @@ export const UserChatWidget: React.FC = () => {
             };
             setMessages(prev => [...prev, aiMsg]);
         } catch (error) {
+            console.error("Chat Error:", error);
             const errorMsg: Message = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant',

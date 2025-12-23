@@ -47,7 +47,7 @@ export class FileUploadService implements OnModuleInit {
 
             // Construct Public URL
             // Format: APP_URL/uploads/folder/filename
-            const appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3005';
+            const appUrl = this.configService.get<string>('APP_URL') || 'http://localhost:3000';
             // We use posix style paths for URLs
             const urlPath = path.posix.join('uploads', folder, filename);
             const publicUrl = `${appUrl}/${urlPath}`;

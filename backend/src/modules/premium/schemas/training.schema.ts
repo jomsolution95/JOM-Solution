@@ -15,7 +15,7 @@ export interface CourseModule {
 
 @Schema({ timestamps: true })
 export class Training {
-    @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+    @Prop({ type: Types.ObjectId, ref: 'User', required: true })
     institutionId!: Types.ObjectId;
 
     @Prop({ required: true })

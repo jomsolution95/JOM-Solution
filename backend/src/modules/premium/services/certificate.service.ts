@@ -8,6 +8,7 @@ import { FileUploadService } from './file-upload.service';
 const PDFDocument = require('pdfkit');
 import * as QRCode from 'qrcode';
 import { ConfigService } from '@nestjs/config';
+import { EmailService } from '../../notifications/email.service';
 
 @Injectable()
 export class CertificateService {
@@ -20,6 +21,7 @@ export class CertificateService {
         private courseModel: Model<TrainingContentDocument>,
         private fileUploadService: FileUploadService,
         private configService: ConfigService,
+        private emailService: EmailService,
     ) { }
 
     /**
@@ -99,7 +101,26 @@ export class CertificateService {
             },
         });
 
-        return await certificate.save();
+        const savedCert = await certificate.save();
+
+        // Send Certificate Email
+        try {
+            const studentEmail = (progress.studentId as any).email;
+            const studentName = (progress.studentId as any).name || 'Étudiant';
+
+            if (studentEmail) {
+                await this.emailService.sendCertificate(
+                    studentEmail,
+                    studentName,
+                    course.title,
+                    uploadResult.url // Link to the PDF
+                );
+            }
+        } catch (error) {
+            console.error('Failed to send certificate email:', error);
+        }
+
+        return savedCert;
     }
 
     /**

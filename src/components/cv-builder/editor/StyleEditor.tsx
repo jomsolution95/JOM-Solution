@@ -24,7 +24,7 @@ export const StyleEditor: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            <SectionWrapper title="Couleurs" icon={Palette} description="Personnalisez la palette de votre CV." isOpen>
+            <SectionWrapper title="Couleurs" icon={<Palette className="w-5 h-5" />} description="Personnalisez la palette de votre CV." isOpen>
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Couleur Principale</label>
@@ -72,7 +72,7 @@ export const StyleEditor: React.FC = () => {
                 </div>
             </SectionWrapper>
 
-            <SectionWrapper title="Polices" icon={Type} description="Choisissez la typographie." isOpen>
+            <SectionWrapper title="Polices" icon={<Type className="w-5 h-5" />} description="Choisissez la typographie." isOpen>
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Titres</label>

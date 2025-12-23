@@ -6,6 +6,7 @@ import { MessagingGateway } from './messaging.gateway';
 import { Conversation, ConversationSchema } from './schemas/conversation.schema';
 import { Message, MessageSchema } from './schemas/message.schema';
 import { JwtModule } from '@nestjs/jwt';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { JwtModule } from '@nestjs/jwt';
       { name: Message.name, schema: MessageSchema },
     ]),
     JwtModule.register({}),
+    UsersModule,
   ],
   controllers: [MessagingController],
   providers: [MessagingService, MessagingGateway],

@@ -101,4 +101,13 @@ export class CVthequeController {
         const isFavorite = await this.cvthequeService.isFavorite(req.user.userId, profileId);
         return { isFavorite };
     }
+
+    /**
+     * Get follower count
+     */
+    @Get('followers/:profileId/count')
+    async getFollowerCount(@Param('profileId') profileId: string) {
+        const count = await this.cvthequeService.countFollowers(profileId);
+        return { count };
+    }
 }

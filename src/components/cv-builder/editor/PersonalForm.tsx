@@ -91,7 +91,7 @@ export const PersonalForm: React.FC = () => {
                             value={personalInfo.fullName}
                             onChange={(e) => handleChange('fullName', e.target.value)}
                             className="pl-10 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-primary-500"
-                            placeholder="John Doe"
+                            placeholder="Prénom Nom"
                         />
                     </div>
                 </div>

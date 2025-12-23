@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Menu, X, Moon, Sun, Bell, LogOut, Crown, ChevronDown,
   LayoutDashboard, User as UserIcon, Settings, ShoppingBag,
-  GraduationCap, Briefcase
+  GraduationCap, Briefcase, FileText
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -37,6 +37,7 @@ export const Navbar: React.FC = () => {
     { name: 'Services', path: '/services', icon: ShoppingBag, desc: 'Trouvez des prestataires' },
     { name: 'Formations', path: '/formations', icon: GraduationCap, desc: 'Montez en compétences' },
     { name: 'Emplois', path: '/jobs', icon: Briefcase, desc: 'Décrochez un job' },
+
   ];
 
   const isActive = (path: string) => location.pathname === path;
@@ -191,7 +192,14 @@ export const Navbar: React.FC = () => {
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-full border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-all"
                   >
-                    <img src={user.avatar} alt={user.name} className="h-8 w-8 rounded-full object-cover ring-2 ring-white dark:ring-gray-800 shadow-sm" />
+                    <img
+                      src={user.avatar?.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'}${user.avatar}`}
+                      alt={user.name}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`;
+                      }}
+                      className="h-8 w-8 rounded-full object-cover ring-2 ring-white dark:ring-gray-800 shadow-sm"
+                    />
                     <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 

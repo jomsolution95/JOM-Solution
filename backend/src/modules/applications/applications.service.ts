@@ -5,6 +5,8 @@ import { Application, ApplicationDocument } from './schemas/application.schema';
 import { PremiumService } from '../premium/premium.service';
 import { Job } from '../jobs/schemas/job.schema';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EmailService } from '../notifications/email.service';
+import { UsersService } from '../users/users.service';
 import { NotificationType } from '../notifications/schemas/notification.schema';
 
 @Injectable()
@@ -13,7 +15,9 @@ export class ApplicationsService {
         @InjectModel(Application.name) private applicationModel: Model<ApplicationDocument>,
         @InjectModel(Job.name) private jobModel: Model<any>,
         private premiumService: PremiumService,
-        private notificationsService: NotificationsService
+        private notificationsService: NotificationsService,
+        private emailService: EmailService,
+        private usersService: UsersService
     ) { }
 
     async apply(userId: string, jobId: string, cvId: string, coverLetter?: string): Promise<Application> {
@@ -60,14 +64,40 @@ export class ApplicationsService {
 
         const savedApplication = await application.save();
 
-        // 5. Notify Employer
-        await this.notificationsService.send(
-            job.employer.toString(),
-            NotificationType.JOB_APPLICATION,
-            `Nouvelle candidature pour ${job.title}`,
-            `Un candidat vient de postuler à votre offre "${job.title}". Consultez son CV maintenant.`,
-            `/dashboard/applications`
-        );
+        // 5. Notify Employer & Candidate
+
+        // Fetch User Info
+        const [candidate, employer] = await Promise.all([
+            this.usersService.findOne(userId),
+            this.usersService.findOne(job.employer.toString())
+        ]);
+
+        if (candidate) {
+            // Email to Candidate
+            this.emailService.sendApplicationConfirmation(
+                candidate.email,
+                job.title,
+                job.companyName || 'L\'entreprise'
+            ).catch(e => console.error(e));
+        }
+
+        if (employer) {
+            // Platform Notification to Employer
+            await this.notificationsService.send(
+                job.employer.toString(),
+                NotificationType.JOB_APPLICATION,
+                `Nouvelle candidature pour ${job.title}`,
+                `Un candidat vient de postuler à votre offre "${job.title}". Consultez son CV maintenant.`,
+                `/dashboard/applications`
+            );
+
+            // Email to Employer
+            this.emailService.sendNewApplicationAlert(
+                employer.email,
+                job.title,
+                candidate ? (candidate.name || 'Un candidat') : 'Un candidat'
+            ).catch(e => console.error(e));
+        }
 
         return savedApplication;
     }

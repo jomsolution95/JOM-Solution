@@ -29,6 +29,7 @@ export const CreateJob: React.FC = () => {
         budget: '', // Mapped to 'salary' or 'budget' in backend depending on implementation, but DTO says 'budget'
         requirements: '',
         isRemote: false,
+        positions: 1,
     });
 
     const [autoBroadcast, setAutoBroadcast] = useState(false);
@@ -114,6 +115,20 @@ export const CreateJob: React.FC = () => {
                                                 </option>
                                             ))}
                                         </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Nombre de places *
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={formData.positions}
+                                            onChange={(e) => setFormData({ ...formData, positions: parseInt(e.target.value) || 1 })}
+                                            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                            required
+                                        />
                                     </div>
 
                                     <div>

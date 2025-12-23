@@ -44,26 +44,27 @@ export const PWAUpdatePrompt = () => {
                         {offlineReady ? (
                             <>
                                 <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                                    App ready to work offline
+                                    Prêt pour le hors-ligne
                                 </h3>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    You can now use the app without an internet connection.
+                                    Vous pouvez maintenant utiliser l'application sans connexion internet.
                                 </p>
                             </>
                         ) : (
                             <>
                                 <h3 className="font-bold text-gray-900 dark:text-white mb-1">
-                                    New version available
+                                    Nouvelle version disponible
                                 </h3>
                                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                                    Click reload to update to the latest version.
+                                    Cliquez sur recharger pour mettre à jour.
                                 </p>
+                                ```
                                 <button
                                     onClick={handleUpdate}
                                     className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold rounded-lg transition-colors"
                                 >
                                     <Download className="w-4 h-4" />
-                                    Reload
+                                    Recharger
                                 </button>
                             </>
                         )}

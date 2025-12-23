@@ -40,7 +40,7 @@ export const useRealtime = (options: UseRealtimeOptions = {}): UseRealtimeReturn
 
         const socket = io(url, {
             auth: {
-                token,
+                token: `Bearer ${token}`,
             },
             transports: ['websocket', 'polling'],
             reconnection: true,

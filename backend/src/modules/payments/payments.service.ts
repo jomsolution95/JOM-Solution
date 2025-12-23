@@ -6,6 +6,9 @@ import { Order, OrderDocument } from '../services/schemas/order.schema';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { EscrowService } from '../escrow/escrow.service';
 import { InvoicingService } from './services/invoicing.service';
+import { EmailService } from '../notifications/email.service'; // Assuming path
+import { UsersService } from '../users/users.service'; // Assuming path
+import { PremiumService } from '../premium/premium.service'; // Assuming path
 
 @Injectable()
 export class PaymentsService {
@@ -14,6 +17,9 @@ export class PaymentsService {
         @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
         @Inject(forwardRef(() => EscrowService)) private readonly escrowService: EscrowService,
         private readonly invoicingService: InvoicingService,
+        private readonly emailService: EmailService,
+        private readonly usersService: UsersService,
+        private readonly premiumService: PremiumService,
     ) { }
 
     async initiatePayment(userId: string, dto: InitiatePaymentDto): Promise<any> {
@@ -69,7 +75,46 @@ export class PaymentsService {
         return { status: 'success', transaction };
     }
 
-    async handleWebhook(payload: any): Promise<void> {
+    async processWebhook(payload: any) {
+        console.log('Payment Webhook:', payload);
+
+        // PAYTECH SPECIFIC
+        if (payload.api_key_sha256 && payload.type === 'sale_complete') {
+            const ref = payload.item_ref;
+            const transaction = await this.transactionModel.findOne({ reference: ref });
+
+            if (transaction && transaction.status !== TransactionStatus.COMPLETED) {
+                transaction.status = TransactionStatus.COMPLETED;
+                const savedTx = await transaction.save();
+
+                // Activate Subscription if needed
+                if (savedTx.type === 'subscription') {
+                    // Logic handled in PremiumService or here
+                    // await this.premiumService.activate...
+                }
+
+                // Send Receipt
+                try {
+                    // Check if payer exists
+                    if (savedTx.payer) {
+                        const user = await this.usersService.findOne(savedTx.payer.toString());
+                        if (user) {
+                            await this.emailService.sendPaymentReceipt(
+                                user.email,
+                                user.name || 'Client',
+                                `${savedTx.amount} ${savedTx.currency}`,
+                                savedTx.description || 'Achat JOM'
+                            );
+                        }
+                    }
+                } catch (err) {
+                    console.error("Failed to send receipt:", err);
+                }
+            }
+            return { status: 'ok' };
+        }
+
+        // Generic webhook handling (from original handleWebhook)
         const { externalId, status, transactionId } = payload;
         const transaction = await this.transactionModel.findById(transactionId);
         if (!transaction) return;

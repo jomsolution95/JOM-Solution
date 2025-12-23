@@ -49,7 +49,10 @@ import { SearchModule } from './modules/search/search.module';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
+        uri: configService.get<string>('DATABASE_URL'),
+        ssl: false, // interne docker network, souvent pas de ssl requis, a voir
+        tls: false,
+        // tlsInsecure: true, // Only for debugging local SSL issues
       }),
       inject: [ConfigService],
     }),

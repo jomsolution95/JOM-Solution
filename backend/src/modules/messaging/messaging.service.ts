@@ -12,10 +12,19 @@ export class MessagingService {
     constructor(
         @InjectModel(Conversation.name) private conversationModel: Model<ConversationDocument>,
         @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
+        @InjectModel('User') private userModel: Model<any>,
     ) { }
 
     async createConversation(createConversationDto: CreateConversationDto, userId: string): Promise<Conversation> {
-        const participants = [...new Set([...createConversationDto.participants, userId])].map(id => new Types.ObjectId(id));
+        const uniqueIds = [...new Set([...createConversationDto.participants, userId])];
+
+        // Validate users exist
+        const validCount = await this.userModel.countDocuments({ _id: { $in: uniqueIds } });
+        if (validCount !== uniqueIds.length) {
+            throw new NotFoundException('One or more participants not found');
+        }
+
+        const participants = uniqueIds.map(id => new Types.ObjectId(id));
 
         // Check for existing private conversation (2 participants)
         if (participants.length === 2 && !createConversationDto.name) {

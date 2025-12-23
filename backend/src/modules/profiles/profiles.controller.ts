@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards, Query, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UseGuards, Query, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import { ProfilesService } from './profiles.service';
@@ -19,16 +19,17 @@ export class ProfilesController {
         return this.profilesService.create(createProfileDto, userId);
     }
 
-    @UseInterceptors(CacheInterceptor)
-    @CacheTTL(300)
     @Get()
-    findAll(@Query() paginationDto: PaginationDto) {
-        return this.profilesService.findAll(paginationDto);
+    @UseGuards(AccessTokenGuard)
+    findAll(@Query() paginationDto: PaginationDto, @GetUser('sub') userId: string) {
+        console.log(`[ProfilesController] findAll - User ID from Token: ${userId}`);
+        return this.profilesService.findAll(paginationDto, {}, userId);
     }
 
     @Get('search')
-    search(@Query() searchDto: SearchDto) {
-        return this.profilesService.search(searchDto);
+    @UseGuards(AccessTokenGuard)
+    search(@Query() searchDto: SearchDto, @GetUser('sub') userId: string) {
+        return this.profilesService.search(searchDto, userId);
     }
 
     @Get('user/:userId')
@@ -56,6 +57,9 @@ export class ProfilesController {
     @UseGuards(AccessTokenGuard)
     @UseInterceptors(FileInterceptor('file'))
     async uploadAvatar(@GetUser('sub') userId: string, @UploadedFile() file: Express.Multer.File) {
+        if (!file) {
+            throw new BadRequestException('Aucun fichier fourni ou format invalide');
+        }
         return this.profilesService.uploadAvatar(userId, file);
     }
 }

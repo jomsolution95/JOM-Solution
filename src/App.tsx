@@ -45,12 +45,16 @@ const MyLearning = lazy(() => import('./pages/MyLearning'));
 const CoursePlayer = lazy(() => import('./pages/CoursePlayer').then(module => ({ default: module.CoursePlayer })));
 const MyCertificates = lazy(() => import('./pages/MyCertificates'));
 const CertificateVerification = lazy(() => import('./pages/CertificateVerification').then(module => ({ default: module.CertificateVerification })));
+const ATSPage = lazy(() => import('./pages/ATSPage').then(module => ({ default: module.ATSPage })));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage').then(module => ({ default: module.AnalyticsPage })));
+const CVThequeSearch = lazy(() => import('./pages/CVThequeSearch'));
 
 import { Facebook, Twitter, Linkedin, Instagram, Mail, ArrowRight, Heart, Check } from 'lucide-react';
 
 import { TourOverlay } from './components/onboarding/TourOverlay';
 import { AdminChatWidget } from './components/admin/AdminChatWidget';
 import { UserChatWidget } from './components/chat/UserChatWidget';
+import { BoostPopup } from './components/BoostPopup';
 
 const MainLayout: React.FC = () => {
   const { user } = useAuth();
@@ -107,6 +111,7 @@ const MainLayout: React.FC = () => {
             <Route path="/jobs" element={<AuthGuard><Jobs /></AuthGuard>} />
             <Route path="/jobs/:id" element={<AuthGuard><Jobs /></AuthGuard>} />
             <Route path="/jobs/create" element={<AuthGuard><CreateJob /></AuthGuard>} />
+            <Route path="/ats" element={<AuthGuard><ATSPage /></AuthGuard>} />
             <Route path="/formations/create" element={<AuthGuard><CreateCourse /></AuthGuard>} />
             <Route path="/my-learning" element={<AuthGuard><MyLearning /></AuthGuard>} />
             <Route path="/learning/:courseId" element={<AuthGuard><CoursePlayer /></AuthGuard>} />
@@ -126,6 +131,8 @@ const MainLayout: React.FC = () => {
             <Route path="/messages" element={<AuthGuard><MessagesPage /></AuthGuard>} />
             <Route path="/billing" element={<AuthGuard><Billing /></AuthGuard>} />
             <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+            <Route path="/analytics" element={<AuthGuard><AnalyticsPage /></AuthGuard>} />
+            <Route path="/cvtheque/search" element={<AuthGuard><CVThequeSearch /></AuthGuard>} />
 
             {/* SUPER ADMIN ROUTES */}
             <Route path="/super-admin" element={<SuperAdminLogin />} />

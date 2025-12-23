@@ -1,11 +1,16 @@
 import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { ApplicationsService } from './applications.service';
 import { AccessTokenGuard } from '../auth/guards/at.guard';
+import { PremiumService } from '../premium/premium.service';
+import { QuotaType } from '../premium/schemas/premiumQuotas.schema';
 
 @Controller('applications')
 @UseGuards(AccessTokenGuard)
 export class ApplicationsController {
-    constructor(private readonly applicationsService: ApplicationsService) { }
+    constructor(
+        private readonly applicationsService: ApplicationsService,
+        private readonly premiumService: PremiumService
+    ) { }
 
     @Post(':jobId')
     async apply(
@@ -13,6 +18,7 @@ export class ApplicationsController {
         @Param('jobId') jobId: string,
         @Body() body: { cvId: string, coverLetter?: string }
     ) {
+        await this.premiumService.checkFreeLimit(req.user.userId, QuotaType.APPLICATIONS, 2);
         return this.applicationsService.apply(req.user.userId, jobId, body.cvId, body.coverLetter);
     }
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page, Text, View, Document } from '@react-pdf/renderer';
+import { Page, Text, View, Document, Image } from '@react-pdf/renderer';
 import { TemplateProps } from '../cv/types';
 import { createPdfStyles } from './styles';
 
@@ -10,16 +10,29 @@ export const ModernPdf: React.FC<TemplateProps> = ({ data, config }) => {
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                {/* Header */}
-                <View style={styles.header}>
-                    <Text style={styles.h1}>{personalInfo.fullName}</Text>
-                    <Text style={styles.h2}>{personalInfo.title}</Text>
+                {/* Header with Photo */}
+                <View style={[styles.header, { flexDirection: 'row', alignItems: 'center', gap: 20 }]}>
+                    {personalInfo.avatar && (
+                        <Image
+                            src={personalInfo.avatar}
+                            style={{
+                                width: 70,
+                                height: 70,
+                                borderRadius: 35,
+                                objectFit: 'cover',
+                            }}
+                        />
+                    )}
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.h1}>{personalInfo.fullName}</Text>
+                        <Text style={styles.h2}>{personalInfo.title}</Text>
 
-                    <View style={styles.contactLine}>
-                        {personalInfo.email && <Text>{personalInfo.email}</Text>}
-                        {personalInfo.phone && <Text>• {personalInfo.phone}</Text>}
-                        {personalInfo.address && <Text>• {personalInfo.address}</Text>}
-                        {personalInfo.linkedin && <Text>• {personalInfo.linkedin}</Text>}
+                        <View style={styles.contactLine}>
+                            {personalInfo.email && <Text>{personalInfo.email}</Text>}
+                            {personalInfo.phone && <Text>• {personalInfo.phone}</Text>}
+                            {personalInfo.address && <Text>• {personalInfo.address}</Text>}
+                            {personalInfo.linkedin && <Text>• {personalInfo.linkedin}</Text>}
+                        </View>
                     </View>
                 </View>
 

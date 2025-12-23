@@ -49,4 +49,29 @@ export class UsersController {
     remove(@Param('id') id: string) {
         return this.usersService.remove(id);
     }
+    @Post('block/:targetId')
+    async blockUser(@Req() req: any, @Param('targetId') targetId: string) {
+        return this.usersService.blockUser(req.user.userId, targetId);
+    }
+
+    @Post('unblock/:targetId')
+    async unblockUser(@Req() req: any, @Param('targetId') targetId: string) {
+        return this.usersService.unblockUser(req.user.userId, targetId);
+    }
+
+    @Get('me/settings')
+    async getSettings(@Req() req: any) {
+        const user = await this.usersService.findOne(req.user.userId);
+        // @ts-ignore
+        return user.settings || {};
+    }
+
+    @Patch('me/settings')
+    async updateSettings(@Req() req: any, @Body() settings: any) {
+        const updates: any = {};
+        for (const key of Object.keys(settings)) {
+            updates[`settings.${key}`] = settings[key];
+        }
+        return this.usersService.update(req.user.userId, updates);
+    }
 }

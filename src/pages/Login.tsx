@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 import { UserRole } from '../types';
 import { User, Briefcase, GraduationCap, Building2, ArrowRight, Lock, Mail, Github, Linkedin, CheckCircle2 } from 'lucide-react';
 import { BackButton } from '../components/BackButton';
@@ -10,6 +11,8 @@ export const Login: React.FC = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState<UserRole>('individual');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -24,11 +27,32 @@ export const Login: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    await login(email, password);
-    navigate('/reseaux');
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData(e.currentTarget as HTMLFormElement);
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
+
+      console.log('Attempting login with role:', selectedRole);
+      await login(email, password, selectedRole);
+      navigate('/dashboard');
+    } catch (error: any) {
+      console.error("Login Error caught in component:", error);
+      const message = error.response?.data?.message || 'Échec de la connexion';
+
+      // Temporary Debug Alert to ensure user sees the error
+      alert(`Erreur de connexion: ${message}`);
+
+      // Translate common messages if needed
+      if (message.includes('Access denied for role')) {
+        toast.error("Rôle incorrect pour ce compte. Vérifiez l'onglet choisi.");
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const roles = [
@@ -131,7 +155,7 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          <form className="space-y-6" onSubmit={handleLogin}>
+          <form className="space-y-6" onSubmit={handleLogin} autoComplete="off">
             <div className="space-y-4">
               <div className="relative group">
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
@@ -143,7 +167,7 @@ export const Login: React.FC = () => {
                     id="email"
                     name="email"
                     type="email"
-                    autoComplete="email"
+                    autoComplete="off"
                     required
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-700 rounded-xl leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all sm:text-sm dark:text-white"
                     placeholder="votre@email.com"
@@ -161,8 +185,7 @@ export const Login: React.FC = () => {
                     id="password"
                     name="password"
                     type="password"
-                    autoComplete="current-password"
-                    autoComplete="current-password"
+                    autoComplete="off"
                     required
                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-700 rounded-xl leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all sm:text-sm dark:text-white"
                     placeholder="••••••••"
@@ -194,10 +217,10 @@ export const Login: React.FC = () => {
             <div>
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isSubmitting}
                 className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-bold text-white bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-all transform hover:-translate-y-0.5"
               >
-                {isLoading ? (
+                {isLoading || isSubmitting ? (
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -221,7 +244,7 @@ export const Login: React.FC = () => {
               </div>
 
               <div className="mt-6 grid grid-cols-3 gap-3">
-                <a href="http://localhost:3005/api/auth/google" className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                <a href={`${API_URL}/auth/google`} className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                   <svg className="h-5 w-5" viewBox="0 0 24 24">
                   <path
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -241,12 +264,12 @@ export const Login: React.FC = () => {
                   />
                   </svg>
                 </a>
-                <a href="http://localhost:3005/api/auth/facebook" className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                <a href={`${API_URL}/auth/facebook`} className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                   <svg className="h-5 w-5 text-[#1877F2] fill-current" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.791-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                   </svg>
                 </a>
-                <a href="http://localhost:3005/api/auth/linkedin" className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                <a href={`${API_URL}/auth/linkedin`} className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
                   <Linkedin className="w-5 h-5 text-[#0A66C2]" />
                 </a>
               </div>

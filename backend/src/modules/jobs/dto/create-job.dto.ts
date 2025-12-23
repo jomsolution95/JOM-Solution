@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsEnum, IsOptional, IsArray, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsString, IsEnum, IsOptional, IsArray, IsBoolean, IsNumber } from 'class-validator';
 import { JobType } from '../schemas/job.schema';
 
 export class CreateJobDto {
@@ -28,6 +28,10 @@ export class CreateJobDto {
     @IsOptional()
     @IsBoolean()
     isRemote?: boolean;
+
+    @IsOptional()
+    @IsNumber()
+    positions?: number;
 
     @IsOptional()
     @IsBoolean()

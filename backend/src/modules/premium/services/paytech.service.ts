@@ -38,8 +38,8 @@ export class PayTechService {
                 command_name: commandName,
                 env: env,
                 ipn_url: `${this.configService.get('APP_URL')}/api/premium/webhook/paytech`,
-                success_url: `${this.configService.get('FRONTEND_URL') || 'http://localhost:5173'}/dashboard/premium/success`,
-                cancel_url: `${this.configService.get('FRONTEND_URL') || 'http://localhost:5173'}/dashboard/premium/cancel`,
+                success_url: `${this.configService.get('FRONTEND_URL') || 'https://jom-solution.com'}/dashboard/premium/success`,
+                cancel_url: `${this.configService.get('FRONTEND_URL') || 'https://jom-solution.com'}/dashboard/premium/cancel`,
                 custom_field: JSON.stringify(metadata),
             };
 

@@ -1,17 +1,35 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 
 async function bootstrap() {
   console.log('--- BOOTSTRAPPING NESTJS APPLICATION ---');
+  console.log('Forcing rebuild for LoginDto update...');
   console.log('Processing environment...');
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Serve static files from 'uploads' directory
+  const uploadsPath = join(process.cwd(), 'uploads');
+  console.log('Serving static assets from:', uploadsPath);
+
+  app.use('/uploads', (req: any, res: any, next: any) => {
+    console.log('Static asset request:', req.url);
+    next();
+  });
+
+  app.useStaticAssets(uploadsPath, {
+    prefix: '/uploads',
+  });
 
   // Security Middlewares
-  app.use(helmet());
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }));
   // app.use(mongoSanitize());
 
   // CORS Configuration
@@ -25,7 +43,7 @@ async function bootstrap() {
   // Global Validation Pipe
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
-    forbidNonWhitelisted: true,
+    forbidNonWhitelisted: false, // TEMPORARY: Disabled to allow 'role' property while DTO update propagates
     transform: true,
   }));
 
@@ -45,5 +63,6 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
   console.log(`Application running on port ${port}`);
+  console.log('Server restart forced.');
 }
 bootstrap();

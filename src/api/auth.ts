@@ -45,10 +45,11 @@ export const refreshAccessToken = async (): Promise<string | null> => {
 /**
  * Login user and store tokens
  */
-export const login = async (email: string, password: string) => {
+export const login = async (email: string, password: string, role?: string) => {
     const response = await axios.post(`${AUTH_API_URL}/auth/login`, {
         email,
         password,
+        role
     });
 
     const { access_token, refresh_token, user } = response.data;
@@ -64,12 +65,13 @@ export const login = async (email: string, password: string) => {
 /**
  * Register new user
  */
-export const register = async (email: string, password: string, role: string) => {
+export const register = async (email: string, password: string, role: string, profile?: any) => {
     // Note: apiClient (via AUTH_API_URL logic in client.ts) handles the correct port
     const response = await axios.post(`${AUTH_API_URL}/auth/register`, {
         email,
         password,
-        role
+        role,
+        profile
     });
     return response.data;
 };

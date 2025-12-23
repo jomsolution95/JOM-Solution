@@ -95,7 +95,7 @@ const IndividualDashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const { data } = await api.get('/stats/profile'); // Ensure endpoint matches backend
+        const { data } = await api.get('/stats/profile');
         setStats(data.stats);
       } catch (error) {
         console.error("Failed to fetch dashboard stats", error);
@@ -106,12 +106,6 @@ const IndividualDashboard = () => {
     fetchStats();
   }, []);
 
-  const recentActivity = [
-    { id: 1, type: 'order', title: 'Plomberie', subtitle: 'Jean Michel • En cours', date: 'Aujourd\'hui', amount: '-15 000', icon: ShoppingBag, color: 'bg-blue-100 text-blue-600' },
-    { id: 2, type: 'course', title: 'Dev Web', subtitle: 'Module 4 terminé', date: 'Hier', amount: '+15% XP', icon: GraduationCap, color: 'bg-purple-100 text-purple-600' },
-    { id: 3, type: 'job', title: 'Candidature envoyée', subtitle: 'Tech Solutions', date: '24 Oct', status: 'Envoyé', icon: Briefcase, color: 'bg-green-100 text-green-600' },
-  ];
-
   if (loading) return <div className="p-8 text-center text-gray-500 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div></div>;
 
   return (
@@ -119,75 +113,31 @@ const IndividualDashboard = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <QuickAction icon={Search} label="Trouver un Service" to="/services" color="bg-blue-500" data-tour="service-search-link" />
-        <QuickAction icon={Plus} label="Proposer un Service" to="/my-items" color="bg-pink-500" />
+        <QuickAction icon={FileText} label="Créer mon CV" to="/cv-builder" color="bg-blue-600" />
         <QuickAction icon={Briefcase} label="Offres d'Emploi" to="/jobs" color="bg-green-500" data-tour="job-search-link" />
         <QuickAction icon={GraduationCap} label="Mes Formations" to="/formations" color="bg-purple-500" />
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" data-tour="dashboard-stats">
-        <StatCard title="Dépenses (Mois)" value={stats?.totalSpending ? `${stats.totalSpending} F` : '0 F'} icon={CreditCard} color="bg-blue-500" trend="up" subtext="+0%" />
-        <StatCard title="Commandes" value={stats?.activeOrders || 0} icon={ShoppingBag} color="bg-indigo-500" trend="up" subtext="Actives" />
-        <StatCard title="Candidatures" value={stats?.applicationsCount || 0} icon={Briefcase} color="bg-green-500" trend="up" subtext="Envoyées" />
-        <StatCard title="Certifications" value={stats?.certificationsCount || 0} icon={Crown} color="bg-yellow-500" trend="up" subtext="Obtenues" />
+        <StatCard title="Dépenses (Mois)" value={stats?.expenses?.month ? `${stats.expenses.month} F` : '0 F'} icon={CreditCard} color="bg-blue-500" trend="up" subtext="Ce mois" />
+        <StatCard title="Commandes" value={stats?.orders?.active || 0} icon={ShoppingBag} color="bg-indigo-500" trend="up" subtext="Actives" />
+        <StatCard title="Candidatures" value={stats?.applications?.total || 0} icon={Briefcase} color="bg-green-500" trend="up" subtext="Envoyées" />
+        <StatCard title="Certifications" value={stats?.certifications?.total || 0} icon={Crown} color="bg-yellow-500" trend="up" subtext="Obtenues" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Activity Feed */}
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
           <SectionHeader title="Activité Récente" linkText="Voir tout" linkTo="/my-items" />
-          <div className="space-y-6">
-            {recentActivity.map((item) => (
-              <div key={item.id} className="flex items-center justify-between group">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${item.color} dark:bg-opacity-10`}>
-                    <item.icon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900 dark:text-white group-hover:text-primary-600 transition-colors">{item.title}</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{item.subtitle}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className={`block font-bold text-sm ${item.amount?.includes('-') ? 'text-gray-900 dark:text-white' : 'text-green-500'}`}>
-                    {item.amount || item.status}
-                  </span>
-                  <span className="text-xs text-gray-400">{item.date}</span>
-                </div>
-              </div>
-            ))}
+          <div className="py-10 text-center text-gray-400">
+            <Clock className="w-12 h-12 mx-auto mb-3 opacity-20" />
+            <p>Aucune activité récente.</p>
           </div>
         </div>
 
         {/* Side Widgets */}
         <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-4">Mon Apprentissage</h3>
-            <div className="space-y-4">
-              <div className="relative pt-1">
-                <div className="flex mb-2 items-center justify-between">
-                  <div>
-                    <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-purple-600 bg-purple-200">
-                      En cours
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs font-semibold inline-block text-purple-600">
-                      75%
-                    </span>
-                  </div>
-                </div>
-                <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-1">Dev Web Fullstack</h4>
-                <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-purple-200 dark:bg-gray-700">
-                  <div style={{ width: "75%" }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-purple-500"></div>
-                </div>
-              </div>
-              <button className="w-full py-2 text-sm font-medium text-purple-600 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 transition-colors">
-                Continuer le cours
-              </button>
-            </div>
-          </div>
-
           <PremiumCard />
         </div>
       </div>
@@ -205,13 +155,13 @@ const CompanyDashboard = () => {
       try {
         const { data } = await api.get('/stats/recruitment');
         setStats(data.stats);
-        if (data.stats?.monthlyStats) {
-          setChartData(data.stats.monthlyStats);
-        } else {
-          setChartData([
-            { name: 'Jan', revenue: 0, visits: 0 },
-            { name: 'Fév', revenue: 0, visits: 0 },
-          ]);
+        if (data.stats?.applicationsByDate) {
+          // Map backend date format to chart format
+          const mappedData = data.stats.applicationsByDate.map((d: any) => ({
+            name: new Date(d._id).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+            value: d.count
+          }));
+          setChartData(mappedData);
         }
       } catch (error) {
         console.error("Failed to fetch company stats", error);
@@ -229,67 +179,55 @@ const CompanyDashboard = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <QuickAction icon={Plus} label="Nouveau Service" to="/my-items" color="bg-blue-500" />
-        <QuickAction icon={Briefcase} label="Publier Offre" to="/jobs" color="bg-purple-500" data-tour="post-job-btn" />
-        <QuickAction icon={Search} label="Trouver un Service" to="/services" color="bg-green-500" data-tour="cvtheque-link" />
-        <QuickAction icon={TrendingUp} label="Analytics" to="/settings" color="bg-orange-500" />
+        <QuickAction icon={Briefcase} label="Publier Offre" to="/jobs/create" color="bg-purple-500" data-tour="post-job-btn" />
+        <QuickAction icon={Search} label="CVthèque" to="/cvtheque/search" color="bg-teal-500" />
+        <QuickAction icon={Users} label="Gestion Candidats (ATS)" to="/ats" color="bg-pink-500" />
+        <QuickAction icon={TrendingUp} label="Statistiques" to="/analytics" color="bg-orange-500" />
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Revenu Total" value={stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString()} F` : '0 F'} icon={DollarSign} color="bg-green-500" trend="up" subtext="+0%" />
-        <StatCard title="Vues Profil" value={stats?.profileViews || 0} icon={Search} color="bg-blue-500" trend="up" subtext="+0%" />
-        <StatCard title="Candidatures" value={stats?.applicationsCount || 0} icon={Users} color="bg-purple-500" trend="up" subtext="Reçues" />
-        <StatCard title="Emplois Actifs" value={stats?.activeJobs || 0} icon={Briefcase} color="bg-orange-500" trend="up" subtext="En ligne" />
+        <StatCard title="Offres Totales" value={stats?.totalJobs || 0} icon={Briefcase} color="bg-green-500" trend="up" subtext="Publiées" />
+        <StatCard title="Offres Actives" value={stats?.activeJobs || 0} icon={Zap} color="bg-blue-500" trend="up" subtext="En ligne" />
+        <StatCard title="Candidatures" value={stats?.totalApplications || 0} icon={Users} color="bg-purple-500" trend="up" subtext="Reçues" />
+        <StatCard title="Taux Conv." value={`${stats?.conversionRate || 0}%`} icon={TrendingUp} color="bg-orange-500" trend="up" subtext="Embauches" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Chart */}
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
-          <SectionHeader title="Performance Financière" />
+          <SectionHeader title="Évolution des Candidatures" />
           <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData.length > 0 ? chartData : []}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px', color: '#fff' }}
-                  itemStyle={{ color: '#fff' }}
-                />
-                <Area type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px', color: '#fff' }}
+                    itemStyle={{ color: '#fff' }}
+                  />
+                  <Area type="monotone" dataKey="value" stroke="#8B5CF6" strokeWidth={3} fillOpacity={1} fill="url(#colorApps)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-gray-400">
+                <p>Aucune donnée disponible pour le moment.</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Side Widgets */}
         <div className="space-y-6">
           <PremiumCard />
-
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
-            <SectionHeader title="Derniers Candidats" />
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center gap-3 pb-3 border-b border-gray-50 dark:border-gray-700 last:border-0 last:pb-0">
-                  <img src={`https://ui-avatars.com/api/?name=Candidat+${i}&background=random`} className="w-10 h-10 rounded-full" alt="" />
-                  <div className="flex-1">
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">Jean Dupont</p>
-                    <p className="text-xs text-gray-500">Dev Frontend</p>
-                  </div>
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-400 hover:text-primary-600">
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <button className="w-full mt-4 text-sm text-center text-gray-500 hover:text-primary-600">Voir tout le vivier</button>
-          </div>
         </div>
       </div>
     </div>
@@ -306,15 +244,12 @@ const EtablissementDashboard = () => {
       try {
         const { data } = await api.get('/stats/academy');
         setStats(data.stats);
-        if (data.stats?.categoryStats) {
-          setChartData(data.stats.categoryStats);
-        } else {
-          setChartData([
-            { name: 'Dev', value: 400 },
-            { name: 'Mkt', value: 300 },
-            { name: 'Dsn', value: 300 },
-            { name: 'Biz', value: 200 },
-          ]);
+        if (data.stats?.progressDistribution) {
+          const mappedData = data.stats.progressDistribution.map((d: any) => ({
+            name: `${d._id}%`,
+            value: d.count
+          }));
+          setChartData(mappedData);
         }
       } catch (error) {
         console.error("Failed to fetch academy stats", error);
@@ -339,70 +274,39 @@ const EtablissementDashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Étudiants Actifs" value={stats?.activeStudents || 0} icon={Users} color="bg-blue-500" trend="up" subtext="Inscrits" />
-        <StatCard title="Revenus Form." value={stats?.totalRevenue ? `${stats.totalRevenue.toLocaleString()} F` : '0 F'} icon={DollarSign} color="bg-green-500" trend="up" subtext="Total" />
-        <StatCard title="Taux Complétion" value={stats?.completionRate ? `${stats.completionRate}%` : '0%'} icon={CheckCircle2} color="bg-purple-500" trend="up" subtext="Moyen" />
-        <StatCard title="Note Moyenne" value={stats?.averageRating ? stats.averageRating : 'N/A'} icon={Star} color="bg-yellow-500" trend="up" subtext="Avis" />
+        <StatCard title="Étudiants Actifs" value={stats?.totalEnrollments || 0} icon={Users} color="bg-blue-500" trend="up" subtext="Inscrits" />
+        <StatCard title="Cours Terminés" value={stats?.completedCourses || 0} icon={CheckCircle2} color="bg-green-500" trend="up" subtext="Total" />
+        <StatCard title="Taux Complétion" value={stats?.completionRate ? `${stats.completionRate}%` : '0%'} icon={TrendingUp} color="bg-purple-500" trend="up" subtext="Moyen" />
+        <StatCard title="Progression Moy." value={stats?.avgProgress ? `${stats.avgProgress}%` : '0%'} icon={Star} color="bg-yellow-500" trend="up" subtext="Global" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm">
-          <SectionHeader title="Cours les plus populaires" />
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                <tr>
-                  <th className="px-4 py-3 rounded-l-lg">Cours</th>
-                  <th className="px-4 py-3">Étudiants</th>
-                  <th className="px-4 py-3">Revenus</th>
-                  <th className="px-4 py-3 rounded-r-lg">Performance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(stats?.popularCourses || []).map((course: any, i: number) => (
-                  <tr key={i} className="border-b border-gray-50 dark:border-gray-700 last:border-0">
-                    <td className="px-4 py-4 font-bold text-gray-900 dark:text-white">{course.title}</td>
-                    <td className="px-4 py-4 text-gray-600 dark:text-gray-300">{course.studentsCount}</td>
-                    <td className="px-4 py-4 text-green-600 font-medium">{course.revenue} F</td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 bg-gray-200 rounded-full h-1.5 dark:bg-gray-700">
-                          <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: `${course.completionRate}%` }}></div>
-                        </div>
-                        <span className="text-xs font-bold">{course.completionRate}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {(!stats?.popularCourses || stats.popularCourses.length === 0) && (
-                  <tr><td colSpan={4} className="p-4 text-center text-gray-500">Aucun cours disponible</td></tr>
-                )}
-              </tbody>
-            </table>
+          <SectionHeader title="Répartition par Cours" />
+          <div className="py-10 text-center text-gray-400">
+            <p>Les données détaillées par cours seront disponibles bientôt.</p>
           </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-          <SectionHeader title="Répartition" />
+          <SectionHeader title="Progression" />
           <div className="flex-1 min-h-[200px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={chartData.length > 0 ? chartData : [{ name: 'Aucun', value: 1 }]} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {(chartData.length > 0 ? chartData : [{ name: 'Aucun', value: 1 }]).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            {chartData.length > 0 && chartData.map((d, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs text-gray-500">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
-                {d.name}
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={chartData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-gray-400 text-sm">
+                Pas de données
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

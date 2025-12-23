@@ -1,204 +1,116 @@
-import React, { useState } from 'react';
-import { Download, Trash2, AlertTriangle, Loader, FileText, Database } from 'lucide-react';
-import { toast } from 'react-toastify';
+
+import React, { useState, useEffect } from 'react';
+import { Lock, Eye, Users, FileText, Download } from 'lucide-react';
 import api from '../api/client';
+import { toast } from 'react-toastify';
 
 export const DataPrivacySettings: React.FC = () => {
-    const [isDownloading, setIsDownloading] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [loading, setLoading] = useState(true);
+    const [settings, setSettings] = useState({
+        profileVisibility: 'public',
+        ghostMode: false,
+        blockedUsers: [] as string[]
+    });
 
-    const handleDownloadData = async () => {
-        setIsDownloading(true);
+    useEffect(() => {
+        loadSettings();
+    }, []);
 
+    const loadSettings = async () => {
         try {
-            const response = await api.get('/users/data/export', {
-                responseType: 'blob',
+            const res = await api.get('/users/me/settings');
+            const privacy = res.data?.privacy || {};
+            setSettings({
+                profileVisibility: privacy.profileVisibility || 'public',
+                ghostMode: privacy.ghostMode || false,
+                blockedUsers: privacy.blockedUsers || []
             });
-
-            // Create download link
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `my-data-${Date.now()}.zip`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-
-            toast.success('Données téléchargées avec succès !');
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Échec du téléchargement des données');
+        } catch (err) {
+            console.error(err);
         } finally {
-            setIsDownloading(false);
+            setLoading(false);
         }
     };
 
-    const handleDeleteAccount = async () => {
-        if (deleteConfirmText !== 'SUPPRIMER MON COMPTE') {
-            toast.error('Veuillez saisir le texte de confirmation correctement');
-            return;
-        }
-
-        setIsDeleting(true);
-
+    const updateSetting = async (key: string, value: any) => {
         try {
-            await api.delete('/users/account');
-            toast.success('Compte supprimé avec succès');
-
-            // Logout and redirect
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 2000);
-        } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Échec de la suppression du compte');
-        } finally {
-            setIsDeleting(false);
+            const newSettings = { ...settings, [key]: value };
+            setSettings(newSettings);
+            await api.patch('/users/me/settings', {
+                privacy: newSettings
+            });
+            toast.success('Paramètres mis à jour');
+        } catch (err) {
+            toast.error('Erreur lors de la mise à jour');
+            console.error(err);
         }
     };
+
+    if (loading) return <div>Chargement...</div>;
 
     return (
         <div className="space-y-6">
-            {/* Download Data */}
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-start gap-4">
-                    <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                        <Download className="w-6 h-6 text-blue-600" />
+                <h2 className="text-xl font-bold mb-4 flex items-center gap-2 dark:text-white">
+                    <Eye className="w-5 h-5 text-primary-600" />
+                    Visibilité du Profil
+                </h2>
+
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <div>
+                            <h3 className="font-medium dark:text-white">Qui peut voir votre profil ?</h3>
+                            <p className="text-sm text-gray-500">Contrôlez l'accès à vos informations personnelles.</p>
+                        </div>
+                        <select
+                            value={settings.profileVisibility}
+                            onChange={(e) => updateSetting('profileVisibility', e.target.value)}
+                            className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 dark:text-white"
+                        >
+                            <option value="public">Tout le monde (Public)</option>
+                            <option value="connected">Membres connectés uniquement</option>
+                            <option value="private">Moi uniquement (Masqué)</option>
+                        </select>
                     </div>
 
-                    <div className="flex-1">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                            Télécharger vos données
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">
-                            Téléchargez une copie de toutes vos données conformément au RGPD. Cela inclut vos informations de profil, publications, messages et historique d'activité.
-                        </p>
-
-                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
-                            <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
-                                <FileText className="w-4 h-4" />
-                                Ce qui est inclus :
-                            </h3>
-                            <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1 ml-6 list-disc">
-                                <li>Informations de profil (nom, email, téléphone, bio)</li>
-                                <li>Toutes vos publications et commentaires</li>
-                                <li>Messages et conversations</li>
-                                <li>Candidatures et services</li>
-                                <li>Historique des paiements et factures</li>
-                                <li>Journaux d'activité du compte</li>
-                            </ul>
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <div>
+                            <h3 className="font-medium dark:text-white">Mode Fantôme</h3>
+                            <p className="text-sm text-gray-500">Visitez d'autres profils sans apparaître dans leurs notifications de vue.</p>
                         </div>
-
-                        <button
-                            onClick={handleDownloadData}
-                            disabled={isDownloading}
-                            className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold rounded-lg transition-colors"
-                        >
-                            {isDownloading ? (
-                                <>
-                                    <Loader className="w-5 h-5 animate-spin" />
-                                    Préparation du téléchargement...
-                                </>
-                            ) : (
-                                <>
-                                    <Download className="w-5 h-5" />
-                                    Télécharger mes données
-                                </>
-                            )}
-                        </button>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={settings.ghostMode}
+                                onChange={(e) => updateSetting('ghostMode', e.target.checked)}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                        </label>
                     </div>
                 </div>
             </div>
 
-            {/* Delete Account */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border-2 border-red-200 dark:border-red-900">
-                <div className="flex items-start gap-4">
-                    <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
-                        <Trash2 className="w-6 h-6 text-red-600" />
-                    </div>
-
-                    <div className="flex-1">
-                        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                            Supprimer le compte
-                        </h2>
-                        <p className="text-gray-600 dark:text-gray-400 mb-4">
-                            Supprimez définitivement votre compte et toutes les données associées. Cette action est irréversible.
-                        </p>
-
-                        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 mb-4">
-                            <div className="flex items-start gap-3">
-                                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <h3 className="font-semibold text-red-900 dark:text-red-100 mb-2">
-                                        Attention : Cette action est irréversible
-                                    </h3>
-                                    <ul className="text-sm text-red-800 dark:text-red-200 space-y-1 ml-6 list-disc">
-                                        <li>Toutes vos données seront définitivement supprimées</li>
-                                        <li>Vous perdrez l'accès à tous les services et abonnements</li>
-                                        <li>Votre profil sera retiré de la plateforme</li>
-                                        <li>Les commandes et paiements actifs seront annulés</li>
-                                        <li>Cette action ne peut pas être annulée</li>
-                                    </ul>
-                                </div>
-                            </div>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-bold mb-4 flex items-center gap-2 dark:text-white">
+                    <FileText className="w-5 h-5 text-primary-600" />
+                    Vos Données
+                </h2>
+                <div className="space-y-4">
+                    <button className="flex items-center gap-3 w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg transition-colors group">
+                        <Download className="w-5 h-5 text-gray-400 group-hover:text-primary-600" />
+                        <div>
+                            <h3 className="font-medium dark:text-white">Télécharger vos données</h3>
+                            <p className="text-sm text-gray-500">Recevez une copie de toutes vos données (RGPD)</p>
                         </div>
-
-                        {!showDeleteConfirm ? (
-                            <button
-                                onClick={() => setShowDeleteConfirm(true)}
-                                className="flex items-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors"
-                            >
-                                <Trash2 className="w-5 h-5" />
-                                Supprimer mon compte
-                            </button>
-                        ) : (
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Tapez <span className="font-mono font-bold">SUPPRIMER MON COMPTE</span> pour confirmer
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={deleteConfirmText}
-                                        onChange={(e) => setDeleteConfirmText(e.target.value)}
-                                        placeholder="SUPPRIMER MON COMPTE"
-                                        className="w-full px-4 py-3 rounded-lg border-2 border-red-300 dark:border-red-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                    />
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={handleDeleteAccount}
-                                        disabled={isDeleting || deleteConfirmText !== 'SUPPRIMER MON COMPTE'}
-                                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-bold rounded-lg transition-colors"
-                                    >
-                                        {isDeleting ? (
-                                            <>
-                                                <Loader className="w-5 h-5 animate-spin" />
-                                                Suppression...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Trash2 className="w-5 h-5" />
-                                                Confirmer la suppression
-                                            </>
-                                        )}
-                                    </button>
-
-                                    <button
-                                        onClick={() => {
-                                            setShowDeleteConfirm(false);
-                                            setDeleteConfirmText('');
-                                        }}
-                                        className="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold rounded-lg transition-colors"
-                                    >
-                                        Annuler
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+                    </button>
+                    <button className="flex items-center gap-3 w-full p-4 text-left hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors group">
+                        <Lock className="w-5 h-5 text-gray-400 group-hover:text-red-500" />
+                        <div>
+                            <h3 className="font-medium group-hover:text-red-600 dark:text-white">Fermer le compte</h3>
+                            <p className="text-sm text-gray-500">Désactiver ou supprimer définitivement votre compte</p>
+                        </div>
+                    </button>
                 </div>
             </div>
         </div>

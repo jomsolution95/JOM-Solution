@@ -118,15 +118,57 @@ export const Register: React.FC = () => {
       }
 
       try {
-        // 1. Register User
-        await register(formData.email, formData.password, selectedRole);
+        // Construct Profile Data
+        let profileData: any = {};
+        if (selectedRole === 'individual') {
+          profileData = {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            phone: formData.phone,
+            bio: formData.bio,
+            location: formData.location,
+            skills: formData.skills && typeof formData.skills === 'string' ? formData.skills.split(',').map((s: string) => s.trim()) : [],
+          };
+        } else if (selectedRole === 'company') {
+          profileData = {
+            displayName: formData.companyName,
+            location: formData.location,
+            phone: formData.phone,
+            bio: formData.description,
+            companyDetails: {
+              industry: formData.sector,
+              size: formData.companyType,
+              website: formData.website
+            }
+          };
+        } else if (selectedRole === 'etablissement') {
+          profileData = {
+            displayName: formData.schoolName,
+            location: formData.location,
+            phone: formData.phone,
+            bio: formData.description,
+            companyDetails: {
+              industry: 'Education',
+              size: formData.schoolType,
+              website: formData.website
+            }
+          };
+        }
 
-        // 2. Upload File if present
-        const fileField = selectedRole === 'individual' ? 'avatar' : 'logo';
-        const file = formData[fileField];
+        // 1. Register User (Critical)
+        await register(formData.email, formData.password, selectedRole, profileData);
 
-        if (file instanceof File) {
-          await profilesApi.uploadAvatar(file);
+        // 2. Upload File if present (Non-critical)
+        try {
+          const fileField = selectedRole === 'individual' ? 'avatar' : 'logo';
+          const file = formData[fileField];
+
+          if (file instanceof File) {
+            await profilesApi.uploadAvatar(file);
+          }
+        } catch (uploadError) {
+          console.error("Avatar upload failed, but account created:", uploadError);
+          // Optionally notify user
         }
 
         navigate('/dashboard');
@@ -210,6 +252,7 @@ export const Register: React.FC = () => {
               required={field.required}
               onChange={handleChange}
               value={formData[field.name] || ''}
+              autoComplete="off"
             />
             {field.name.includes('password') && (
               <button
@@ -325,7 +368,7 @@ export const Register: React.FC = () => {
               })}
             </div>
           ) : (
-            <form className="space-y-8 animate-fade-in-up" onSubmit={handleRegister}>
+            <form className="space-y-8 animate-fade-in-up" onSubmit={handleRegister} autoComplete="off">
               {/* Mandatory Section */}
               <div className="bg-gray-50 dark:bg-gray-800/50 p-6 rounded-2xl border border-gray-100 dark:border-gray-800">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-6 flex items-center gap-2">

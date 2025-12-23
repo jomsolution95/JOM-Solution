@@ -28,7 +28,7 @@ export const SummaryForm: React.FC = () => {
     };
 
     return (
-        <SectionWrapper title="Profil Professionnel" icon={FileText} description="Un bref résumé de votre parcours et de vos objectifs.">
+        <SectionWrapper title="Profil Professionnel" icon={<FileText className="w-5 h-5" />} description="Un bref résumé de votre parcours et de vos objectifs.">
             <div className="space-y-3">
                 <div className="flex justify-end">
                     <button

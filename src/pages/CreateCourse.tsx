@@ -46,16 +46,7 @@ interface CourseForm {
     modules: Module[];
 }
 
-const CATEGORIES = [
-    'Développement Web',
-    'Design & Graphisme',
-    'Marketing Digital',
-    'Business & Entrepreneuriat',
-    'Langues',
-    'Développement Personnel',
-    'Bureautique',
-    'Autre'
-];
+import { TRAINING_CATEGORIES } from '../constants/categories';
 
 export const CreateCourse: React.FC = () => {
     const navigate = useNavigate();
@@ -67,7 +58,7 @@ export const CreateCourse: React.FC = () => {
     const [formData, setFormData] = useState<CourseForm>({
         title: '',
         description: '',
-        category: 'Développement Web',
+        category: 'Développement Web & Mobile',
         price: 0,
         currency: 'XOF',
         thumbnail: '',
@@ -81,6 +72,39 @@ export const CreateCourse: React.FC = () => {
             }
         ]
     });
+    // ... 
+    // ... inside return ...
+    <div className="col-span-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Catégorie</label>
+        <select
+            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white"
+            value={TRAINING_CATEGORIES.includes(formData.category) ? formData.category : 'Autre'}
+            onChange={e => {
+                const val = e.target.value;
+                if (val === 'Autre') {
+                    updateField('category', '');
+                } else {
+                    updateField('category', val);
+                }
+            }}
+        >
+            {TRAINING_CATEGORIES.map(c => c !== 'Autre' && <option key={c} value={c}>{c}</option>)}
+            <option value="Autre">Autre (Préciser)</option>
+        </select>
+
+        {(!TRAINING_CATEGORIES.includes(formData.category) || formData.category === '') && (
+            <div className="mt-2 animate-in fade-in slide-in-from-top-2">
+                <input
+                    type="text"
+                    required
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-600 border border-primary-300 dark:border-primary-500 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white text-sm"
+                    placeholder="Ex: Intelligence Artificielle..."
+                    value={formData.category}
+                    onChange={e => updateField('category', e.target.value)}
+                />
+            </div>
+        )}
+    </div>
 
     // Helper to update basic fields
     const updateField = (field: keyof CourseForm, value: any) => {
@@ -270,11 +294,32 @@ export const CreateCourse: React.FC = () => {
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Catégorie</label>
                                     <select
                                         className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white"
-                                        value={formData.category}
-                                        onChange={e => updateField('category', e.target.value)}
+                                        value={TRAINING_CATEGORIES.includes(formData.category) ? formData.category : 'Autre'}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            if (val === 'Autre') {
+                                                updateField('category', '');
+                                            } else {
+                                                updateField('category', val);
+                                            }
+                                        }}
                                     >
-                                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                        {TRAINING_CATEGORIES.map(c => c !== 'Autre' && <option key={c} value={c}>{c}</option>)}
+                                        <option value="Autre">Autre (Préciser)</option>
                                     </select>
+
+                                    {(!TRAINING_CATEGORIES.includes(formData.category) || formData.category === '') && (
+                                        <div className="mt-2 animate-in fade-in slide-in-from-top-2">
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full px-4 py-3 bg-white dark:bg-gray-600 border border-primary-300 dark:border-primary-500 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none dark:text-white text-sm"
+                                                placeholder="Précisez la catégorie..."
+                                                value={formData.category}
+                                                onChange={e => updateField('category', e.target.value)}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Niveau</label>

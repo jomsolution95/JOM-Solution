@@ -37,12 +37,12 @@ export interface Application {
 }
 
 const statusColumns: { id: ApplicationStatus; label: string; color: string }[] = [
-    { id: 'applied', label: 'Applied', color: 'bg-gray-100 dark:bg-gray-800' },
-    { id: 'screening', label: 'Screening', color: 'bg-blue-100 dark:bg-blue-900/30' },
-    { id: 'interview', label: 'Interview', color: 'bg-yellow-100 dark:bg-yellow-900/30' },
-    { id: 'offer', label: 'Offer', color: 'bg-purple-100 dark:bg-purple-900/30' },
-    { id: 'hired', label: 'Hired', color: 'bg-green-100 dark:bg-green-900/30' },
-    { id: 'rejected', label: 'Rejected', color: 'bg-red-100 dark:bg-red-900/30' },
+    { id: 'applied', label: 'Reçu', color: 'bg-gray-100 dark:bg-gray-800' },
+    { id: 'screening', label: 'En examen', color: 'bg-blue-100 dark:bg-blue-900/30' },
+    { id: 'interview', label: 'Entretien', color: 'bg-yellow-100 dark:bg-yellow-900/30' },
+    { id: 'offer', label: 'Offre', color: 'bg-purple-100 dark:bg-purple-900/30' },
+    { id: 'hired', label: 'Recruté', color: 'bg-green-100 dark:bg-green-900/30' },
+    { id: 'rejected', label: 'Refusé', color: 'bg-red-100 dark:bg-red-900/30' },
 ];
 
 export const ATSPage: React.FC = () => {
@@ -81,10 +81,10 @@ export const ATSPage: React.FC = () => {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['applications'] });
-            toast.success('Application status updated');
+            toast.success('Statut mis à jour avec succès');
         },
         onError: () => {
-            toast.error('Failed to update status');
+            toast.error('Erreur lors de la mise à jour');
         },
     });
 
@@ -152,10 +152,10 @@ export const ATSPage: React.FC = () => {
                     <div className="flex items-center justify-between mb-4">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                                Applicant Tracking System
+                                Gestion des Recrutements (ATS)
                             </h1>
                             <p className="text-gray-600 dark:text-gray-400">
-                                Manage candidates through your hiring pipeline
+                                Pilotez vos processus de recrutement et suivez vos candidats
                             </p>
                         </div>
 
@@ -163,12 +163,12 @@ export const ATSPage: React.FC = () => {
                             <button
                                 onClick={() => setShowCalendar(!showCalendar)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${showCalendar
-                                        ? 'bg-primary-600 text-white'
-                                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+                                    ? 'bg-primary-600 text-white'
+                                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
                                     }`}
                             >
                                 <Calendar className="w-5 h-5" />
-                                Interview Calendar
+                                Calendrier Entretiens
                             </button>
                         </div>
                     </div>
@@ -178,7 +178,7 @@ export const ATSPage: React.FC = () => {
                         <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                             <Users className="w-5 h-5 text-gray-500" />
                             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {applications.length} Total Candidates
+                                {applications.length} Candidats
                             </span>
                         </div>
 
@@ -189,7 +189,7 @@ export const ATSPage: React.FC = () => {
                                 onChange={(e) => setFilterJob(e.target.value)}
                                 className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                             >
-                                <option value="all">All Jobs</option>
+                                <option value="all">Toutes les offres</option>
                                 {jobs.map((job: any) => (
                                     <option key={job._id} value={job._id}>
                                         {job.title}

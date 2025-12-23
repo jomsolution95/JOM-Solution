@@ -95,5 +95,5 @@ export const TrainingContentSchema = SchemaFactory.createForClass(TrainingConten
 // Indexes
 
 TrainingContentSchema.index({ courseId: 1, order: 1 });
-TrainingContentSchema.index({ status: 1 });
+
 TrainingContentSchema.index({ type: 1 });

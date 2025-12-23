@@ -33,7 +33,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
                 return;
             }
 
-            const secret = this.configService.get<string>('AT_SECRET');
+            const secret = this.configService.get<string>('JWT_SECRET');
             const payload = this.jwtService.verify(token, { secret });
             const userId = payload.sub;
 
@@ -42,6 +42,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
             console.log(`Notification Client connected: ${client.id}, User: ${userId}`);
         } catch (e) {
             console.error('Connection unauthorized', e);
+            console.log('Token that failed:', client.handshake.auth.token || 'No token');
             client.disconnect();
         }
     }

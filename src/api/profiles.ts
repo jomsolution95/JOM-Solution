@@ -21,11 +21,7 @@ export const profilesApi = {
     uploadAvatar: async (file: File) => {
         const formData = new FormData();
         formData.append('file', file);
-        const response = await apiClient.post('/profiles/avatar', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        const response = await apiClient.post('/profiles/avatar', formData);
         return response.data;
     }
 };

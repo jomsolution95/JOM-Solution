@@ -5,11 +5,12 @@ import { refreshAccessToken } from './auth';
 import { sanitizeObject } from '../utils/security';
 
 // Create axios instance with default config
+// Create axios instance with default config
 const apiClient: AxiosInstance = axios.create({
     // Security/Safety Fix:
-    // - In PROD: Use the environment variable defined in your host (Hostinger/Netlify)
-    // - In DEV: Force localhost:3000 to bypass the incorrect .env.local file (locked)
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+    // - In PROD: Default to production domain if env var is missing
+    // - In DEV: Use localhost:3000
+    baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://jom-solution.com/api' : 'http://localhost:3000/api'),
     timeout: 30000, // 30 seconds default
     headers: {
         'Content-Type': 'application/json',
@@ -62,8 +63,15 @@ apiClient.interceptors.request.use(
         }
 
         // Sanitize request data to prevent XSS
-        if (config.data && typeof config.data === 'object') {
-            config.data = sanitizeObject(config.data);
+        if (config.data) {
+            if (config.data instanceof FormData) {
+                // Let the browser set the Content-Type with the correct boundary
+                if (config.headers) {
+                    delete config.headers['Content-Type'];
+                }
+            } else if (typeof config.data === 'object') {
+                config.data = sanitizeObject(config.data);
+            }
         }
 
         return config;
@@ -104,6 +112,10 @@ apiClient.interceptors.response.use(
 
             try {
                 const newAccessToken = await refreshAccessToken();
+
+                if (!newAccessToken) {
+                    throw new Error('Token refresh failed');
+                }
 
                 if (newAccessToken && originalRequest.headers) {
                     originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;

@@ -47,7 +47,8 @@ export const handleApiError = (error: AxiosError<ApiErrorResponse>) => {
             break;
 
         case 404:
-            toast.error('Ressource introuvable.');
+            // 404 is often valid flow (e.g. Profile check). Silence global toast.
+            console.debug('Resource not found (404):', error.config?.url);
             break;
 
         case 409:

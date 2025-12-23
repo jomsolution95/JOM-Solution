@@ -15,26 +15,26 @@ import { BackButton } from '../components/BackButton';
 // Configuration des communautés par rôle
 const COMMUNITIES_BY_ROLE = {
     individual: [
-        { id: 1, name: 'Freelances & Indépendants', members: '15k', icon: Users },
-        { id: 2, name: 'Offres d\'emploi Tech', members: '12k', icon: Briefcase },
-        { id: 3, name: 'Entraide & Conseils Carrière', members: '8k', icon: Heart },
+        { id: 1, name: 'Freelances & Indépendants', members: 'Communauté Active', icon: Users },
+        { id: 2, name: 'Offres d\'emploi Tech', members: 'Opportunités', icon: Briefcase },
+        { id: 3, name: 'Entraide & Conseils Carrière', members: 'Support', icon: Heart },
     ],
     company: [
-        { id: 4, name: 'Business B2B Afrique', members: '25k', icon: Briefcase },
-        { id: 5, name: 'Startups & Innovation', members: '18k', icon: Lightbulb },
-        { id: 6, name: 'Appels d\'offres & Marchés', members: '10k', icon: FileText },
+        { id: 4, name: 'Business B2B Afrique', members: 'Réseau Pro', icon: Briefcase },
+        { id: 5, name: 'Startups & Innovation', members: 'Écosystème', icon: Lightbulb },
+        { id: 6, name: 'Appels d\'offres & Marchés', members: 'Opportunités', icon: FileText },
     ],
     etablissement: [
-        { id: 7, name: 'Pédagogie & E-learning', members: '9k', icon: BookOpen },
-        { id: 8, name: 'Partenariats Écoles-Entreprises', members: '5k', icon: Users },
-        { id: 9, name: 'Orientation Étudiants', members: '14k', icon: GraduationCap },
+        { id: 7, name: 'Pédagogie & E-learning', members: 'Éducation', icon: BookOpen },
+        { id: 8, name: 'Partenariats Écoles-Entreprises', members: 'Collaboration', icon: Users },
+        { id: 9, name: 'Orientation Étudiants', members: 'Conseils', icon: GraduationCap },
     ],
 
     all: [
-        { id: 13, name: 'Tech Afrique', members: '30k', icon: Globe },
-        { id: 14, name: 'Entrepreneurs', members: '22k', icon: Briefcase },
-        { id: 15, name: 'Santé & Bien-être', members: '15k', icon: Heart },
-        { id: 16, name: 'Éducation', members: '18k', icon: GraduationCap },
+        { id: 13, name: 'Tech Afrique', members: 'Tech', icon: Globe },
+        { id: 14, name: 'Entrepreneurs', members: 'Business', icon: Briefcase },
+        { id: 15, name: 'Santé & Bien-être', members: 'Santé', icon: Heart },
+        { id: 16, name: 'Éducation', members: 'Savoir', icon: GraduationCap },
     ]
 };
 
@@ -100,7 +100,6 @@ export const SocialNetwork: React.FC = () => {
                 likes: p.likes?.length || 0,
                 comments: p.comments?.length || 0,
                 shares: p.shares?.length || 0,
-                isLiked: p.likes?.includes(user?._id),
                 isLiked: p.likes?.includes(user?._id),
                 image: p.metadata?.images ? p.metadata.images[0] : (p.image || undefined),
                 jobDetails: p.metadata?.jobDetails,

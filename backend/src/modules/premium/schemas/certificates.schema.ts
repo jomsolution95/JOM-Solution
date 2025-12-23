@@ -63,6 +63,5 @@ export const CertificateSchema = SchemaFactory.createForClass(Certificate);
 // Indexes
 CertificateSchema.index({ studentId: 1, issuedDate: -1 });
 CertificateSchema.index({ courseId: 1 });
-CertificateSchema.index({ certificateNumber: 1 }, { unique: true });
 CertificateSchema.index({ verificationCode: 1 }, { unique: true });
 CertificateSchema.index({ status: 1 });

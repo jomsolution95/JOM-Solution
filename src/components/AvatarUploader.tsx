@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Camera, Upload, X, Loader, CheckCircle } from 'lucide-react';
-import { uploadFile, generatePreview } from '../utils/upload';
+import { profilesApi } from '../api/profiles';
+import { generatePreview } from '../utils/upload';
 import { toast } from 'react-toastify';
 
 export interface AvatarUploaderProps {
@@ -26,6 +27,11 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({
     className = '',
 }) => {
     const [preview, setPreview] = useState<string | undefined>(currentAvatar);
+
+    // Sync preview with prop changes
+    React.useEffect(() => {
+        setPreview(currentAvatar);
+    }, [currentAvatar]);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -48,14 +54,13 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({
         setUploadProgress(0);
 
         try {
-            const result = await uploadFile(file, {
-                maxSizeMB: 0.5,
-                maxWidthOrHeight: 512,
-                onProgress: setUploadProgress,
-            });
+            const result = await profilesApi.uploadAvatar(file);
 
-            setPreview(result.url);
-            onUploadComplete?.(result.url);
+            // Try to find the URL in common paths
+            const newUrl = result.avatarUrl || result.avatar || result.url || (result.data && result.data.avatarUrl);
+
+            setPreview(newUrl);
+            onUploadComplete?.(newUrl);
             toast.success('Avatar updated successfully!');
         } catch (error) {
             setPreview(currentAvatar);
@@ -92,7 +97,7 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({
                 {/* Avatar Image */}
                 {preview ? (
                     <img
-                        src={preview}
+                        src={preview.startsWith('/') ? `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3000'}${preview}` : preview}
                         alt="Avatar"
                         className="w-full h-full object-cover"
                     />
@@ -105,8 +110,8 @@ export const AvatarUploader: React.FC<AvatarUploaderProps> = ({
                 {/* Overlay */}
                 <div
                     className={`absolute inset-0 bg-black transition-opacity flex items-center justify-center ${isDragActive || isUploading
-                            ? 'bg-opacity-70'
-                            : 'bg-opacity-0 group-hover:bg-opacity-50'
+                        ? 'bg-opacity-70'
+                        : 'bg-opacity-0 group-hover:bg-opacity-50'
                         }`}
                 >
                     {isUploading ? (

@@ -171,7 +171,7 @@ export class PremiumService {
     async hasActiveSubscription(userId: string | Types.ObjectId): Promise<boolean> {
         const subscription = await this.subscriptionModel.findOne({
             userId: new Types.ObjectId(userId),
-            status: SubscriptionStatus.ACTIVE,
+            status: { $in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
             endDate: { $gte: new Date() },
         });
 
@@ -186,7 +186,7 @@ export class PremiumService {
     ): Promise<SubscriptionDocument | null> {
         return this.subscriptionModel.findOne({
             userId: new Types.ObjectId(userId),
-            status: SubscriptionStatus.ACTIVE,
+            status: { $in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
             endDate: { $gte: new Date() },
         });
     }
@@ -199,10 +199,16 @@ export class PremiumService {
         requiredPlan: SubscriptionPlan | SubscriptionPlan[],
     ): Promise<boolean> {
         const subscription = await this.getActiveSubscription(userId);
-        if (!subscription) return false;
+        console.log(`[VerifyPlan] User: ${userId}, Sub: ${subscription?.plan}, Status: ${subscription?.status}, Required: ${requiredPlan}`);
+        if (!subscription) {
+            console.log('[VerifyPlan] No active subscription found.');
+            return false;
+        }
 
         const plans = Array.isArray(requiredPlan) ? requiredPlan : [requiredPlan];
-        return plans.includes(subscription.plan);
+        const allowed = plans.includes(subscription.plan);
+        console.log(`[VerifyPlan] Allowed: ${allowed}`);
+        return allowed;
     }
 
     /**
@@ -423,6 +429,46 @@ export class PremiumService {
                 $set: { status: 'expired' },
             },
         );
+    }
+
+    /**
+     * Check and enforce usage limits for freemium users.
+     * If user is Premium -> Bypasses limit (Unlimited).
+     * If user is Free -> Enforces 'limit'.
+     */
+    async checkFreeLimit(userId: string, type: QuotaType, limit: number): Promise<void> {
+        const hasPremium = await this.hasActiveSubscription(userId);
+        if (hasPremium) return; // Unlimited for Premium
+
+        const now = new Date();
+        // Check existing quota for current month
+        let quota = await this.quotaModel.findOne({
+            userId: new Types.ObjectId(userId),
+            quotaType: type,
+            periodEnd: { $gte: now }
+        });
+
+        if (!quota) {
+            // Init quota for this month
+            const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            quota = new this.quotaModel({
+                userId: new Types.ObjectId(userId),
+                quotaType: type,
+                limit: limit,
+                used: 0,
+                periodStart: now,
+                periodEnd: periodEnd,
+                unlimited: false
+            });
+            await quota.save();
+        }
+
+        if (quota.used >= quota.limit) {
+            throw new ForbiddenException(`Free limit reached for ${type} (${quota.limit}/month). Upgrade to Premium for unlimited access.`);
+        }
+
+        quota.used += 1;
+        await quota.save();
     }
 
     /**

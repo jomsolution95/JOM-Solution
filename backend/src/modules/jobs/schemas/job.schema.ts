@@ -44,6 +44,9 @@ export class Job {
     @Prop({ default: false })
     isRemote!: boolean;
 
+    @Prop({ default: 1 })
+    positions!: number;
+
     @Prop({ enum: JobStatus, default: JobStatus.DRAFT })
     status!: JobStatus;
 
@@ -68,5 +71,5 @@ export class Job {
 
 export const JobSchema = SchemaFactory.createForClass(Job);
 JobSchema.index({ title: 'text', description: 'text' });
-JobSchema.index({ title: 'text', description: 'text' });
+
 

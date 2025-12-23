@@ -87,4 +87,19 @@ export class UsersService {
 
         return { data, total };
     }
+    async blockUser(userId: string, targetId: string): Promise<User> {
+        return this.userModel.findByIdAndUpdate(
+            userId,
+            { $addToSet: { 'settings.privacy.blockedUsers': targetId } },
+            { new: true }
+        ).exec() as Promise<User>;
+    }
+
+    async unblockUser(userId: string, targetId: string): Promise<User> {
+        return this.userModel.findByIdAndUpdate(
+            userId,
+            { $pull: { 'settings.privacy.blockedUsers': targetId } },
+            { new: true }
+        ).exec() as Promise<User>;
+    }
 }

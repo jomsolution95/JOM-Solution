@@ -13,7 +13,7 @@ export class LinkedInStrategy extends PassportStrategy(Strategy, 'linkedin') {
         super({
             clientID: configService.get<string>('LINKEDIN_CLIENT_ID') || 'PLACEHOLDER_ID',
             clientSecret: configService.get<string>('LINKEDIN_CLIENT_SECRET') || 'PLACEHOLDER_SECRET',
-            callbackURL: `${configService.get<string>('BASE_URL') || 'http://localhost:3005'}/api/auth/linkedin/callback`,
+            callbackURL: `${configService.get<string>('BASE_URL')}/api/auth/linkedin/callback`,
             scope: ['r_emailaddress', 'r_liteprofile'],
         });
     }

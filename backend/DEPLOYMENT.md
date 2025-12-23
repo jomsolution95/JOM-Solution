@@ -1,251 +1,239 @@
-# Production Deployment Guide
+# Guide de Déploiement en Production
 
-## Overview
-This guide covers deploying the JOM Backend to a production environment with best practices for security, performance, and reliability.
+## Vue d'ensemble
+Ce guide couvre le déploiement du Backend JOM dans un environnement de production, avec les meilleures pratiques en matière de sécurité, performance et fiabilité.
 
-## Prerequisites
-- Ubuntu/Debian VPS with Docker and Docker Compose installed
-- Domain name configured (optional but recommended)
-- GitHub repository access
-- SSH access to the server
+## Prérequis
+- VPS Ubuntu/Debian avec Docker et Docker Compose installés
+- Nom de domaine configuré (optionnel mais recommandé)
+- Accès au dépôt GitHub
+- Accès SSH au serveur
 
-## Environment Setup
+## Configuration de l'Environnement
 
-### 1. Environment Variables
-Copy `.env.production.template` to `.env.production` and update all values:
+### 1. Variables d'Environnement
+Copiez `.env.production.template` vers `.env.production` et mettez à jour toutes les valeurs :
 
 ```bash
 cp .env.production.template .env.production
 nano .env.production
 ```
 
-**Critical values to change:**
-- `JWT_SECRET`, `AT_SECRET`, `RT_SECRET`: Generate strong random strings (min 32 chars)
-- `MONGODB_URI`: Update with production database credentials
-- `CORS_ORIGIN`: Set to your frontend domain
-- `LOKI_HOST`: Configure if using Grafana Loki
+**Valeurs critiques à modifier :**
+- `JWT_SECRET`, `AT_SECRET`, `RT_SECRET` : Générez des chaînes aléatoires fortes (min 32 caractères)
+- `MONGODB_URI` : Mettez à jour avec les identifiants de la base de données de production
+- `CORS_ORIGIN` : Définissez votre domaine frontend
+- `LOKI_HOST` : Configurez si vous utilisez Grafana Loki
 
-### 2. Docker Deployment
+### 2. Déploiement Docker
 
 ```bash
-# Build and start services
+# Construire et démarrer les services
 docker-compose up -d --build
 
-# Check logs
+# Vérifier les logs
 docker-compose logs -f backend
 
-# Verify health
+# Vérifier la santé du service
 curl http://localhost/api/health
 ```
 
-### 3. PM2 Process Management (Alternative to Docker)
+### 3. Gestion des Processus PM2 (Alternative à Docker)
 
-If running directly on the server without Docker:
+Si vous exécutez directement sur le serveur sans Docker :
 
 ```bash
-# Install PM2 globally
+# Installer PM2 globalement
 npm install -g pm2
 
-# Build the application
+# Construire l'application
 npm run build
 
-# Start with PM2
+# Démarrer avec PM2
 pm2 start ecosystem.config.js --env production
 
-# Save PM2 configuration
+# Sauvegarder la configuration PM2
 pm2 save
 
-# Setup PM2 to start on boot
+# Configurer PM2 pour démarrer au boot
 pm2 startup
 ```
 
-## Database Backups
+## Sauvegardes de Base de Données
 
-### Automated Daily Backups
+### Sauvegardes Quotidiennes Automatisées
 
-1. Make the backup script executable:
+1. Rendez le script de sauvegarde exécutable :
 ```bash
 chmod +x scripts/backup_mongo.sh
 ```
 
-2. Configure AWS CLI (if using S3):
+2. Configurez AWS CLI (si utilisation de S3) :
 ```bash
 aws configure
 ```
 
-3. Add to crontab for daily backups at 2 AM:
+3. Ajoutez au crontab pour des sauvegardes quotidiennes à 2h du matin :
 ```bash
 crontab -e
-# Add this line:
+# Ajoutez cette ligne :
 0 2 * * * /path/to/backend/scripts/backup_mongo.sh >> /var/log/mongo-backup.log 2>&1
 ```
 
-## Nginx Configuration
+## Configuration Nginx
 
-### SSL/TLS Setup (Production)
+### Configuration SSL/TLS (Production)
 
-For production, replace the basic Nginx config with SSL:
+Pour la production, remplacez la config Nginx basique par SSL :
 
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name yourdomain.com;
+    server_name votredomaine.com;
 
-    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/votredomaine.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/votredomaine.com/privkey.pem;
     
-    # Include the optimized config from nginx/nginx.conf
+    # Inclure la config optimisée depuis nginx/nginx.conf
     include /etc/nginx/conf.d/jom-backend.conf;
 }
 
 server {
     listen 80;
-    server_name yourdomain.com;
+    server_name votredomaine.com;
     return 301 https://$server_name$request_uri;
 }
 ```
 
-### Let's Encrypt SSL
+### SSL Let's Encrypt
 
 ```bash
-# Install certbot
+# Installer certbot
 sudo apt install certbot python3-certbot-nginx
 
-# Obtain certificate
-sudo certbot --nginx -d yourdomain.com
+# Obtenir le certificat
+sudo certbot --nginx -d votredomaine.com
 ```
 
-## CI/CD with GitHub Actions
+## CI/CD avec GitHub Actions
 
-### Required GitHub Secrets
+### Secrets GitHub Requis
 
-Add these secrets in your GitHub repository settings:
+Ajoutez ces secrets dans les paramètres de votre dépôt GitHub :
 
-- `SSH_HOST`: Your server IP/hostname
-- `SSH_USER`: SSH username (e.g., `ubuntu`)
-- `SSH_KEY`: Private SSH key for authentication
+- `SSH_HOST` : IP/Hostname de votre serveur
+- `SSH_USER` : Nom d'utilisateur SSH (ex: `ubuntu`)
+- `SSH_KEY` : Clé privée SSH pour l'authentification
 
-### Deployment Flow
+### Flux de Déploiement
 
-1. Push to `main` branch triggers the workflow
-2. Tests run automatically
-3. Docker image builds and pushes to GHCR
-4. SSH deployment executes on the server
-5. Services restart with zero downtime
+1. Un push sur la branche `main` déclenche le workflow
+2. Les tests s'exécutent automatiquement
+3. L'image Docker est construite et poussée sur GHCR
+4. Le déploiement SSH s'exécute sur le serveur
+5. Les services redémarrent sans temps d'arrêt
 
-## Monitoring
+## Surveillance (Monitoring)
 
-### Health Checks
+### Vérifications de Santé (Health Checks)
 - **Endpoint**: `GET /health`
-- **Expected Response**: `{"status":"ok","info":{...}}`
+- **Réponse Attendue**: `{"status":"ok","info":{...}}`
 
-### Metrics
+### Métriques
 - **Endpoint**: `GET /metrics`
-- **Format**: Prometheus-compatible
+- **Format**: Compatible Prometheus
 
 ### Logs
-- **Location**: `./logs/application-YYYY-MM-DD.log`
-- **Format**: JSON (structured)
-- **Loki Integration**: Configure `LOKI_HOST` in environment
+- **Emplacement**: `./logs/application-YYYY-MM-DD.log`
+- **Format**: JSON (structuré)
+- **Intégration Loki**: Configurez `LOKI_HOST` dans l'environnement
 
-## Performance Optimization
+## Optimisation des Performances
 
-### Database Indexes
-Ensure MongoDB indexes are created for frequently queried fields:
+### Index Base de Données
+Assurez-vous que les index MongoDB sont créés pour les champs fréquemment interrogés :
 
 ```javascript
-// Run in MongoDB shell
+// Exécuter dans le shell MongoDB
 db.users.createIndex({ email: 1 }, { unique: true });
 db.profiles.createIndex({ userId: 1 });
 db.jobs.createIndex({ status: 1, createdAt: -1 });
 db.services.createIndex({ provider: 1, status: 1 });
 ```
 
-### Redis Configuration
-For production, configure Redis persistence:
+### Configuration Redis
+Pour la production, configurez la persistance Redis :
 
 ```yaml
-# In docker-compose.yml
+# Dans docker-compose.yml
 redis:
   command: redis-server --appendonly yes
   volumes:
     - redis_data:/data
 ```
 
-## Security Checklist
+## Checklist de Sécurité
 
-- [ ] All secrets are environment variables (not hardcoded)
-- [ ] CORS is restricted to your domain
-- [ ] Rate limiting is enabled (Throttler)
-- [ ] Helmet security headers are active
-- [ ] MongoDB sanitization is enabled
-- [ ] SSL/TLS is configured
-- [ ] Firewall rules are set (only ports 80, 443, 22)
-- [ ] SSH key-based authentication (no passwords)
-- [ ] Regular security updates (`apt update && apt upgrade`)
+- [ ] Tous les secrets sont des variables d'environnement (non codés en dur)
+- [ ] CORS est restreint à votre domaine
+- [ ] La limitation de débit (Rate limiting) est activée (Throttler)
+- [ ] Les en-têtes de sécurité Helmet sont actifs
+- [ ] La sanitization MongoDB est activée
+- [ ] SSL/TLS est configuré
+- [ ] Les règles de pare-feu sont définies (ports 80, 443, 22 uniquement)
+- [ ] Authentification SSH par clé uniquement (pas de mot de passe)
+- [ ] Mises à jour de sécurité régulières (`apt update && apt upgrade`)
 
-## Troubleshooting
+## Dépannage (Troubleshooting)
 
-### Container won't start
+### Le conteneur ne démarre pas
 ```bash
 docker-compose logs backend
 docker-compose down && docker-compose up -d
 ```
 
-### Database connection issues
+### Problèmes de connexion à la base de données
 ```bash
-# Check MongoDB is running
+# Vérifier que MongoDB tourne
 docker-compose ps mongo
 
-# Test connection
+# Tester la connexion
 docker exec -it jom_mongo mongosh
 ```
 
-### High memory usage
+### Utilisation mémoire élevée
 ```bash
-# Check PM2 processes
+# Vérifier les processus PM2
 pm2 monit
 
-# Restart if needed
+# Redémarrer si nécessaire
 pm2 restart jom-backend
 ```
 
-## Scaling Considerations
-
-### Horizontal Scaling
-- Use Docker Swarm or Kubernetes for multi-instance deployment
-- Configure session storage in Redis (not in-memory)
-- Use a load balancer (Nginx, HAProxy, or cloud LB)
-
-### Database Scaling
-- Consider MongoDB Atlas for managed scaling
-- Implement read replicas for read-heavy workloads
-- Use sharding for very large datasets
-
 ## Maintenance
 
-### Updates
+### Mises à jour
 ```bash
-# Pull latest code
+# Récupérer le dernier code
 git pull origin main
 
-# Rebuild and restart
+# Reconstruire et redémarrer
 docker-compose up -d --build
 
-# Or with PM2
+# Ou avec PM2
 npm run build
 pm2 reload ecosystem.config.js
 ```
 
-### Database Migrations
+### Migrations de Base de Données
 ```bash
-# Run migrations (when implemented)
+# Exécuter les migrations (si implémentées)
 npm run migrate
 ```
 
 ## Support
 
-For issues or questions:
-- Check logs: `docker-compose logs -f`
-- Review health endpoint: `/health`
-- Check metrics: `/metrics`
+Pour tout problème ou question :
+- Vérifiez les logs : `docker-compose logs -f`
+- Consultez l'endpoint de santé : `/health`
+- Vérifiez les métriques : `/metrics`

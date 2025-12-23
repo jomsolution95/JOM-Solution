@@ -7,6 +7,7 @@ import { Application, ApplicationSchema } from './schemas/application.schema';
 import { PremiumModule } from '../premium/premium.module';
 import { Job, JobSchema } from '../jobs/schemas/job.schema';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UsersModule } from '../users/users.module';
 
 
 @Module({
@@ -16,7 +17,8 @@ import { NotificationsModule } from '../notifications/notifications.module';
       { name: Job.name, schema: JobSchema }
     ]),
     PremiumModule,
-    NotificationsModule
+    NotificationsModule,
+    UsersModule
   ],
   controllers: [ApplicationsController],
   providers: [ApplicationsService],

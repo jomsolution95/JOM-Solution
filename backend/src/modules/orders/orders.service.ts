@@ -8,6 +8,7 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { ServicesService } from '../services/services.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EmailService } from '../notifications/email.service';
 import { NotificationType } from '../notifications/schemas/notification.schema';
 
 @Injectable()
@@ -19,18 +20,22 @@ export class OrdersService {
         private servicesService: ServicesService,
         @Inject(forwardRef(() => EscrowService)) private readonly escrowService: EscrowService,
         private notificationsService: NotificationsService,
+        private emailService: EmailService,
     ) { }
 
     async create(createOrderDto: CreateOrderDto, buyerId: string): Promise<Order> {
         const service = await this.servicesService.findOne(createOrderDto.serviceId);
-        if (service.provider.toString() === buyerId) {
+        // service.provider is populated with email via findOne
+        const provider: any = service.provider;
+
+        if (provider._id.toString() === buyerId) {
             throw new BadRequestException('You cannot order your own service');
         }
 
         const createdOrder = new this.orderModel({
             ...createOrderDto,
             buyer: buyerId,
-            seller: service.provider,
+            seller: provider._id,
             amount: service.basePrice,
             status: OrderStatus.PENDING,
         });
@@ -39,12 +44,22 @@ export class OrdersService {
 
         // Notify Seller
         await this.notificationsService.send(
-            service.provider.toString(),
+            provider._id.toString(),
             NotificationType.ORDER,
             `Nouvelle commande !`,
             `Vous avez reçu une commande pour "${service.title}". Montant: ${service.basePrice} FCFA.`,
             `/dashboard/orders/${savedOrder._id}`
         );
+
+        // Email to Seller
+        if (provider.email) {
+            this.emailService.sendNewOrderAlert(
+                provider.email,
+                provider.name || 'Freelance',
+                service.title,
+                `${service.basePrice} FCFA`
+            ).catch(err => this.logger.error(`Failed to send order email: ${err}`));
+        }
 
         // Notify Buyer
         await this.notificationsService.send(

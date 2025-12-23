@@ -13,7 +13,7 @@ import { Types } from 'mongoose';
 @Injectable()
 export class AiService {
     private genAI: GoogleGenerativeAI;
-    private modelName = 'gemini-1.5-flash';
+    private modelName = 'gemini-pro';
 
     constructor(
         private configService: ConfigService,
@@ -24,17 +24,21 @@ export class AiService {
     ) {
         // Use provided key as fallback or env var 'GEMINI_API_KEY'
         const apiKey = this.configService.get<string>('GEMINI_API_KEY') || 'AIzaSyA9gXHlH58fMwe-6z7MnbdyEkAaDcFGRAk';
+        console.log("AI Service Init - API Key present:", !!this.configService.get<string>('GEMINI_API_KEY'), "Using Key:", apiKey.substring(0, 8) + "...");
         if (apiKey) {
             this.genAI = new GoogleGenerativeAI(apiKey);
         }
     }
 
     async generateSummary(dto: GenerateSummaryDto): Promise<{ summary: string }> {
+        // Fallback check first
         if (!this.genAI) {
+            console.log("AI Service: No GenAI instance, returning mock.");
             return { summary: this.generateMockSummary(dto) };
         }
 
         try {
+            console.log("AI Service: Generating summary via Gemini...");
             const model = this.genAI.getGenerativeModel({ model: this.modelName });
             const prompt = `Génère un résumé professionnel, concis et accrocheur (3-4 phrases) pour un profil CV.
             Rôle: ${dto.currentRole || 'Professionnel'}
@@ -44,10 +48,14 @@ export class AiService {
 
             const result = await model.generateContent(prompt);
             const response = await result.response;
-            return { summary: response.text().trim() };
+            const text = response.text();
+
+            if (!text) throw new Error("Empty response from AI");
+
+            return { summary: text.trim() };
         } catch (error) {
-            console.error('Gemini Error:', error);
-            // Fallback
+            console.error('Gemini Error (generating summary):', error);
+            // Always return mock on failure
             return { summary: this.generateMockSummary(dto) };
         }
     }
@@ -267,10 +275,25 @@ export class AiService {
 
             return responseText;
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('Chat History Error:', error);
-            return "Désolé, j'ai eu un problème de connexion. Réessayez plus tard.";
+            console.log("Switching to Mock Chat due to API error.");
+            return this.mockChat(userMessage);
         }
+    }
+
+    private mockChat(message: string): string {
+        const lowerMsg = message.toLowerCase();
+        if (lowerMsg.includes('bonjour') || lowerMsg.includes('salut')) {
+            return "Bonjour ! Je suis l'assistant JOM (Mode Simulation). Comment puis-je vous aider ?";
+        }
+        if (lowerMsg.includes('emploi') || lowerMsg.includes('recrutement')) {
+            return "Nous avons plusieurs offres d'emploi disponibles dans la section 'Opportunités'. Souhaitez-vous que je vous montre les dernières offres ?";
+        }
+        if (lowerMsg.includes('formation') || lowerMsg.includes('cours')) {
+            return "Notre académie propose des formations certifiantes. Vous pouvez les consulter dans l'onglet 'Académie'.";
+        }
+        return "Je suis en mode simulation car la clé API rencontre un problème. Je ne peux pas générer de réponse complexe pour le moment, mais je comprends que vous parlez de : " + message;
     }
 
     async getHistory(userId: string) {

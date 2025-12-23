@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthController } from './auth.controller';
@@ -12,15 +12,16 @@ import { LinkedInStrategy } from './strategies/linkedin.strategy';
 import { PassportModule } from '@nestjs/passport';
 import { PremiumModule } from '../premium/premium.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ProfilesModule } from '../profiles/profiles.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     JwtModule.register({}),
     PassportModule,
-    PassportModule,
     PremiumModule,
     NotificationsModule,
+    forwardRef(() => ProfilesModule),
   ],
   controllers: [AuthController],
   providers: [AuthService, AccessTokenStrategy, RefreshTokenStrategy, GoogleStrategy, FacebookStrategy, LinkedInStrategy],

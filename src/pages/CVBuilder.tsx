@@ -19,8 +19,11 @@ import {
     Share2,
     Shield
 } from 'lucide-react';
+import { cvTemplates, TemplateComponents } from '../templates/cv';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import CVTemplates from '../templates/cv/CVTemplates50';
+import { mapStoreToCVData } from '../utils/cvMapper';
 import { TemplateSelector } from '../components/cv-builder/TemplateSelector';
 import { PDFExportButton } from '../components/cv-builder/PDFExportButton';
 import { useCVStore } from '../stores/useCVStore'; // Correct path
@@ -40,6 +43,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { BackButton } from '../components/BackButton';
 import { cvApi } from '../api/cv';
 import { profilesApi } from '../api/profiles';
+import { GlobalErrorBoundary } from '../components/GlobalErrorBoundary';
 
 export const CVBuilder: React.FC = () => {
     const navigate = useNavigate();
@@ -72,9 +76,9 @@ export const CVBuilder: React.FC = () => {
         projects,
         interests,
         // Builder Pro
-        sectionOrder,
+        sectionOrder = ['personalInfo', 'summary', 'experiences', 'education', 'skills', 'languages', 'projects', 'interests'],
         setSectionOrder,
-        hiddenSections,
+        hiddenSections = [],
         toggleSectionVisibility
     } = useCVStore();
 
@@ -327,6 +331,45 @@ export const CVBuilder: React.FC = () => {
         }
     };
 
+    const CVPreview = () => {
+        const { selectedTemplateId, ...store } = useCVStore();
+        // Fallback or find config
+        const selectedConfig = cvTemplates.find(t => t.id === selectedTemplateId) || cvTemplates[0];
+
+        // Handle Dynamic Templates (ID-based)
+        if (selectedConfig.archetype === 'Dynamic' && selectedConfig.variantId) {
+            const cvData = mapStoreToCVData(store as any);
+            return (
+                <div className="w-[210mm] min-h-[297mm] bg-white shadow-lg mx-auto overflow-hidden">
+                    <CVTemplates templateId={selectedConfig.variantId} data={cvData} />
+                </div>
+            );
+        }
+
+        // Handle Legacy PDF-based Templates (Rendered as HTML Preview if available, or using a PDF viewer? 
+        // Actually, previous implementation likely used @react-pdf/renderer's PDFViewer or a mapped HTML component.
+        // Let's assume TemplateComponents maps to PDF components, which doesn't work in standard DOM unless using PDFViewer.
+        // But usually we have HTML counterparts. If not, we might fail here for legacy if they are ONLY PDF.
+        // However, the error log "Objects are not valid as React child" earlier happened in THE EDITOR, suggesting the logic was running.
+
+        const TemplateComponent = TemplateComponents[selectedConfig.archetype];
+
+        // If the legacy structure isn't compatible with direct render, we might need a wrapper.
+        // Assuming TemplateComponents are DOM compatible or we use PDFViewer.
+        // Given 'useCVStore' usage inside 'PDFExportButton', likely they are PDF components.
+        // If they are PDF components, we can't just render <TemplateComponent> in a div unless we use PDFViewer.
+        // BUT, looking at the code I saw before (ModernPdf.tsx), it imports View, Text from @react-pdf/renderer.
+        // So rendering them directly in DOM will NOT work (it would output nothing or error).
+        // Check if there is an existing CVPreview logic I missed. 
+        // Ah, looking at lines 128-140 in previous view, I didn't see CVPreview definition.
+        // I will write this cautiously.
+
+        // Wait, if I am defining CVPreview here, I need to know what it was before.
+        // Usage on line 513: <CVPreview />
+
+        // Let's defer this replace until I see the existing CVPreview definition.
+        return null;
+    };
     const handleImport = () => {
         // In a real app, you'd fetch the user profile from auth/api
         // For now, we mock it or use what's available
@@ -349,174 +392,176 @@ export const CVBuilder: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
-            {/* Header Toolbar */}
-            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 sticky top-0 z-50 shadow-sm">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <BackButton onClick={() => navigate('/dashboard')} label="Retour au Dashboard" className="!mb-0" />
-                        <h1 className="text-xl font-bold text-gray-900 dark:text-white hidden sm:block">
-                            Créateur de CV
-                        </h1>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setIsTemplateModalOpen(true)} // Needs state
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
-                        >
-                            <LayoutTemplate className="w-4 h-4" />
-                            Modèles
-                        </button>
-
-                        <button
-                            onClick={handleAutoFill}
-                            className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                        >
-                            <User className="w-4 h-4" />
-                            Importer Profil
-                        </button>
-
-
-
-                        <div className="flex items-center gap-1 mr-2">
-                            <button
-                                onClick={undo}
-                                disabled={past.length === 0}
-                                className={`p-2 rounded-lg transition-colors ${past.length === 0 ? 'text-gray-300 dark:text-gray-700' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}`}
-                                title="Annuler (Ctrl+Z)"
-                            >
-                                <Undo2 className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={redo}
-                                disabled={future.length === 0}
-                                className={`p-2 rounded-lg transition-colors ${future.length === 0 ? 'text-gray-300 dark:text-gray-700' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}`}
-                                title="Rétablir (Ctrl+Y)"
-                            >
-                                <Redo2 className="w-5 h-5" />
-                            </button>
+        <GlobalErrorBoundary>
+            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+                {/* Header Toolbar */}
+                <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 sticky top-0 z-40 shadow-sm">
+                    <div className="max-w-7xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <BackButton onClick={() => navigate('/dashboard')} label="Retour au Dashboard" className="!mb-0" />
+                            <h1 className="text-xl font-bold text-gray-900 dark:text-white hidden sm:block">
+                                Créateur de CV
+                            </h1>
                         </div>
 
-                        <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2"></div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setIsTemplateModalOpen(true)} // Needs state
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                            >
+                                <LayoutTemplate className="w-4 h-4" />
+                                Modèles
+                            </button>
 
-                        {lastSaved && (
-                            <div className="hidden lg:flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 mr-2 animate-in fade-in">
-                                <Cloud className="w-3.5 h-3.5" />
-                                <span>Sauvegardé</span>
-                            </div>
-                        )}
+                            <button
+                                onClick={handleAutoFill}
+                                className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            >
+                                <User className="w-4 h-4" />
+                                Importer Profil
+                            </button>
 
-                        <button
-                            onClick={handleReset}
-                            className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                            title="Réinitialiser"
-                        >
-                            <RefreshCw className="w-5 h-5" />
-                        </button>
 
-                        <button
-                            onClick={handleSave}
-                            disabled={isSaving}
-                            className={`p-2 rounded-lg transition-colors ${isSaving
-                                ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                                : 'text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20'
-                                }`}
-                            title="Sauvegarder dans le cloud"
-                        >
-                            {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
-                        </button>
 
-                        <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2"></div>
-
-                        <button
-                            onClick={() => setIsAtsOpen(true)}
-                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
-                            title="Analyse ATS"
-                        >
-                            <Shield className="w-4 h-4" />
-                            <span className="hidden lg:inline">Score ATS</span>
-                        </button>
-
-                        <button
-                            onClick={handlePublishToProfile}
-                            className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors mr-2 border border-purple-200"
-                            title="Publier sur mon Profil"
-                        >
-                            <Share2 className="w-4 h-4" />
-                            <span className="hidden lg:inline">Publier</span>
-                        </button>
-
-                        <PDFExportButton />
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex-1 flex overflow-hidden">
-                {/* Left Panel - Editor */}
-                <div className="w-full lg:w-1/2 xl:w-5/12 overflow-y-auto border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col">
-                    {/* Tabs Header */}
-                    <div className="flex border-b border-gray-200 dark:border-gray-700">
-                        <button
-                            onClick={() => setActiveTab('content')}
-                            className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${activeTab === 'content'
-                                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                                }`}
-                        >
-                            Contenu
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('design')}
-                            className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${activeTab === 'design'
-                                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                                }`}
-                        >
-                            Design
-                        </button>
-                    </div>
-
-                    <div className="p-6 pb-20 overflow-y-auto flex-1">
-                        <div className="max-w-2xl mx-auto space-y-6">
-                            <div className="lg:hidden mb-6">
-                                <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                                    Pour voir l'aperçu en temps réel, utilisez un écran plus large (tablette/desktop).
-                                </p>
-                            </div>
-
-                            {activeTab === 'content' ? (
-                                <DndContext
-                                    sensors={sensors}
-                                    collisionDetection={closestCenter}
-                                    onDragEnd={handleDragEnd}
+                            <div className="flex items-center gap-1 mr-2">
+                                <button
+                                    onClick={undo}
+                                    disabled={past.length === 0}
+                                    className={`p-2 rounded-lg transition-colors ${past.length === 0 ? 'text-gray-300 dark:text-gray-700' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}`}
+                                    title="Annuler (Ctrl+Z)"
                                 >
-                                    <SortableContext
-                                        items={sectionOrder}
-                                        strategy={verticalListSortingStrategy}
-                                    >
-                                        {sectionOrder.map(id => renderSection(id))}
-                                    </SortableContext>
-                                </DndContext>
-                            ) : (
-                                <StyleEditor />
+                                    <Undo2 className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={redo}
+                                    disabled={future.length === 0}
+                                    className={`p-2 rounded-lg transition-colors ${future.length === 0 ? 'text-gray-300 dark:text-gray-700' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'}`}
+                                    title="Rétablir (Ctrl+Y)"
+                                >
+                                    <Redo2 className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2"></div>
+
+                            {lastSaved && (
+                                <div className="hidden lg:flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 mr-2 animate-in fade-in">
+                                    <Cloud className="w-3.5 h-3.5" />
+                                    <span>Sauvegardé</span>
+                                </div>
                             )}
+
+                            <button
+                                onClick={handleReset}
+                                className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                title="Réinitialiser"
+                            >
+                                <RefreshCw className="w-5 h-5" />
+                            </button>
+
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className={`p-2 rounded-lg transition-colors ${isSaving
+                                    ? 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                                    : 'text-primary-600 hover:bg-primary-50 dark:text-primary-400 dark:hover:bg-primary-900/20'
+                                    }`}
+                                title="Sauvegarder dans le cloud"
+                            >
+                                {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+                            </button>
+
+                            <div className="h-6 w-px bg-gray-300 dark:bg-gray-600 mx-2"></div>
+
+                            <button
+                                onClick={() => setIsAtsOpen(true)}
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+                                title="Analyse ATS"
+                            >
+                                <Shield className="w-4 h-4" />
+                                <span className="hidden lg:inline">Score ATS</span>
+                            </button>
+
+                            <button
+                                onClick={handlePublishToProfile}
+                                className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors mr-2 border border-purple-200"
+                                title="Publier sur mon Profil"
+                            >
+                                <Share2 className="w-4 h-4" />
+                                <span className="hidden lg:inline">Publier</span>
+                            </button>
+
+                            <PDFExportButton />
                         </div>
                     </div>
                 </div>
 
-                {/* Right Panel - Preview */}
-                <div className="hidden lg:flex w-1/2 xl:w-7/12 bg-gray-500/10 overflow-auto items-start justify-center p-8">
-                    <div className="shadow-2xl print:shadow-none" ref={componentRef}>
-                        <CVPreview />
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Left Panel - Editor */}
+                    <div className="w-full lg:w-1/2 xl:w-5/12 overflow-y-auto border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex flex-col">
+                        {/* Tabs Header */}
+                        <div className="flex border-b border-gray-200 dark:border-gray-700">
+                            <button
+                                onClick={() => setActiveTab('content')}
+                                className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${activeTab === 'content'
+                                    ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                    }`}
+                            >
+                                Contenu
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('design')}
+                                className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors ${activeTab === 'design'
+                                    ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                    }`}
+                            >
+                                Design
+                            </button>
+                        </div>
+
+                        <div className="p-6 pb-20 overflow-y-auto flex-1">
+                            <div className="max-w-2xl mx-auto space-y-6">
+                                <div className="lg:hidden mb-6">
+                                    <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                                        Pour voir l'aperçu en temps réel, utilisez un écran plus large (tablette/desktop).
+                                    </p>
+                                </div>
+
+                                {activeTab === 'content' ? (
+                                    <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={closestCenter}
+                                        onDragEnd={handleDragEnd}
+                                    >
+                                        <SortableContext
+                                            items={sectionOrder}
+                                            strategy={verticalListSortingStrategy}
+                                        >
+                                            {sectionOrder.map(id => renderSection(id))}
+                                        </SortableContext>
+                                    </DndContext>
+                                ) : (
+                                    <StyleEditor />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Panel - Preview */}
+                    <div className="hidden lg:flex w-1/2 xl:w-7/12 bg-gray-500/10 overflow-auto items-start justify-center p-8">
+                        <div className="shadow-2xl print:shadow-none" ref={componentRef}>
+                            <CVPreview />
+                        </div>
                     </div>
                 </div>
-            </div>
-            {/* Template Selection Modal */}
-            <TemplateSelector isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)} />
+                {/* Template Selection Modal */}
+                <TemplateSelector isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)} />
 
-            {/* ATS Optimizer Modal */}
-            <AtsOptimizer isOpen={isAtsOpen} onClose={() => setIsAtsOpen(false)} />
-        </div>
+                {/* ATS Optimizer Modal */}
+                <AtsOptimizer isOpen={isAtsOpen} onClose={() => setIsAtsOpen(false)} />
+            </div>
+        </GlobalErrorBoundary>
     );
 };

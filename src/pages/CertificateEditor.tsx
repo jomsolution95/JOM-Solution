@@ -196,7 +196,7 @@ export const CertificateEditor: React.FC = () => {
                                             fontFamily: 'serif'
                                         }}
                                     >
-                                        {key === 'studentName' ? 'Jean Dupont' :
+                                        {key === 'studentName' ? 'Prénom Nom' :
                                             key === 'courseName' ? 'Formation Complète React' :
                                                 key === 'date' ? new Date().toLocaleDateString() :
                                                     (config as any).customText || 'Signature'}

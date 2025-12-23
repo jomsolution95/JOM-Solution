@@ -20,9 +20,9 @@ export class AuthController {
     @Post('register')
     @HttpCode(HttpStatus.CREATED)
     async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
-        const tokens = await this.authService.register(dto);
-        this.setRefreshTokenCookie(res, tokens.refresh_token);
-        return { access_token: tokens.access_token };
+        const result = await this.authService.register(dto);
+        this.setRefreshTokenCookie(res, result.refresh_token);
+        return { access_token: result.access_token, refresh_token: result.refresh_token, user: result.user };
     }
 
     @Post('login')
@@ -72,7 +72,8 @@ export class AuthController {
     async googleAuthRedirect(@Req() req: any, @Res() res: Response) {
         const { access_token, refresh_token } = req.user;
         this.setRefreshTokenCookie(res, refresh_token);
-        res.redirect(`http://localhost:5173/social-callback?token=${access_token}`);
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+        res.redirect(`${frontendUrl}/social-callback?token=${access_token}`);
     }
 
     @Get('facebook')
@@ -84,7 +85,8 @@ export class AuthController {
     async facebookAuthRedirect(@Req() req: any, @Res() res: Response) {
         const { access_token, refresh_token } = req.user;
         this.setRefreshTokenCookie(res, refresh_token);
-        res.redirect(`http://localhost:5173/social-callback?token=${access_token}`);
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+        res.redirect(`${frontendUrl}/social-callback?token=${access_token}`);
     }
 
     @Get('linkedin')
@@ -96,7 +98,8 @@ export class AuthController {
     async linkedinAuthRedirect(@Req() req: any, @Res() res: Response) {
         const { access_token, refresh_token } = req.user;
         this.setRefreshTokenCookie(res, refresh_token);
-        res.redirect(`http://localhost:5173/social-callback?token=${access_token}`);
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+        res.redirect(`${frontendUrl}/social-callback?token=${access_token}`);
     }
     @Post('forgot-password')
     @HttpCode(HttpStatus.OK)

@@ -18,6 +18,7 @@ export enum QuotaType {
     TRAINING_BOOSTS = 'training_boosts',
     MESSAGES = 'messages',
     APPLICATIONS = 'applications',
+    CV_UPDATES = 'cv_updates',
     PUSH_NOTIFICATIONS = 'push_notifications',
 }
 

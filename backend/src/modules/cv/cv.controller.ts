@@ -4,14 +4,20 @@ import { CreateCvDto } from './dto/create-cv.dto';
 import { UpdateCvDto } from './dto/update-cv.dto';
 import { AccessTokenGuard } from '../auth/guards/at.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { PremiumService } from '../premium/premium.service';
+import { QuotaType } from '../premium/schemas/premiumQuotas.schema';
 
 @Controller('cv')
 @UseGuards(AccessTokenGuard, RolesGuard)
 export class CvController {
-    constructor(private readonly cvService: CvService) { }
+    constructor(
+        private readonly cvService: CvService,
+        private readonly premiumService: PremiumService
+    ) { }
 
     @Post()
-    create(@Request() req: any, @Body() createCvDto: CreateCvDto) {
+    async create(@Request() req: any, @Body() createCvDto: CreateCvDto) {
+        await this.premiumService.checkFreeLimit(req.user.userId, QuotaType.CV_UPDATES, 1);
         return this.cvService.create(req.user.userId, createCvDto);
     }
 
@@ -26,7 +32,8 @@ export class CvController {
     }
 
     @Put(':id')
-    update(@Request() req: any, @Param('id') id: string, @Body() updateCvDto: UpdateCvDto) {
+    async update(@Request() req: any, @Param('id') id: string, @Body() updateCvDto: UpdateCvDto) {
+        await this.premiumService.checkFreeLimit(req.user.userId, QuotaType.CV_UPDATES, 1);
         return this.cvService.update(id, req.user.userId, updateCvDto);
     }
 

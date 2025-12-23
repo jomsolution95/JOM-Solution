@@ -54,6 +54,7 @@ export class CVthequeService {
         const query: any = {
             role: 'individual', // Only search individual profiles
             isActive: true,
+            _id: { $ne: userId }, // Exclude current user
         };
 
         if (dto.skills) {
@@ -254,5 +255,14 @@ export class CVthequeService {
             profileId: new Types.ObjectId(profileId),
         });
         return count > 0;
+    }
+
+    /**
+     * Count followers (favorites) for a profile
+     */
+    async countFollowers(profileId: string | Types.ObjectId): Promise<number> {
+        return this.favoriteModel.countDocuments({
+            profileId: new Types.ObjectId(profileId),
+        });
     }
 }

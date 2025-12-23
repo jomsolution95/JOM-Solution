@@ -9,8 +9,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, role: string) => Promise<void>;
+  login: (email: string, password: string, role?: string) => Promise<void>;
+  register: (email: string, password: string, role: string, profile?: any) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
   hasRole: (role: string) => boolean;
@@ -49,9 +49,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initAuth();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, role?: string) => {
     try {
-      const data = await apiLogin(email, password);
+      const data = await apiLogin(email, password, role);
       // Update state immediately
       setUser(data.user);
       // Persist is handled in apiLogin, but we verify here for sanity if needed
@@ -65,10 +65,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (email: string, password: string, role: string) => {
+  const register = async (email: string, password: string, role: string, profile?: any) => {
     try {
       // Call register API via centralized client (handles port 3000 fix)
-      const data = await apiRegister(email, password, role);
+      const data = await apiRegister(email, password, role, profile);
 
       // Store tokens
       localStorage.setItem('access_token', data.access_token);

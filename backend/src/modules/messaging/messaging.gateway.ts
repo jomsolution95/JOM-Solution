@@ -106,7 +106,8 @@ export class MessagingGateway implements OnGatewayConnection, OnGatewayDisconnec
 
         // Also check auth object (standard for socket.io client)
         if (client.handshake.auth?.token) {
-            return client.handshake.auth.token;
+            const authHeader = client.handshake.auth.token;
+            return authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : authHeader;
         }
 
         return undefined;

@@ -10,6 +10,6 @@ import { Service, ServiceSchema } from './schemas/service.schema';
   ],
   controllers: [ServicesController],
   providers: [ServicesService],
-  exports: [ServicesService]
+  exports: [ServicesService, MongooseModule]
 })
 export class ServicesModule { }

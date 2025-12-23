@@ -33,7 +33,7 @@ export const createPdfStyles = (config: TemplateConfig) => {
             fontFamily: fontFamilyHeading,
             color: colors.secondary,
             textTransform: 'uppercase',
-            marginBottom: 4,
+            marginBottom: 10,
         },
         h2: {
             fontSize: 14,
@@ -75,7 +75,7 @@ export const createPdfStyles = (config: TemplateConfig) => {
             gap: 20,
         },
         leftCol: {
-            width: '65%',
+            width: '60%',
         },
         rightCol: {
             width: '35%',

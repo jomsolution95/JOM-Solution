@@ -7,6 +7,7 @@ export interface TemplateColors {
     subtext: string;
     background: string;
     accent: string;
+    micros?: string; // Added for detailed accents
 }
 
 export interface TemplateFonts {
@@ -25,11 +26,13 @@ export interface TemplateConfig {
     name: string;
     description: string;
     previewImage?: string; // URL for the selector
-    archetype: 'Modern' | 'Minimalist' | 'Corporate' | 'Creative' | 'ATS';
+    thumbnail?: string; // Added for UI previews
+    archetype: 'Modern' | 'Minimalist' | 'Corporate' | 'Creative' | 'ATS' | 'Dynamic';
     colors: TemplateColors;
     fonts: TemplateFonts;
     layout: TemplateLayout;
     isPremium?: boolean;
+    variantId?: number;
 }
 
 export interface TemplateProps {

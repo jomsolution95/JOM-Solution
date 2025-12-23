@@ -8,6 +8,7 @@ import { WaveService } from './services/wave.service';
 import { OrangeMoneyService } from './services/orange-money.service';
 import { PayTechService } from './services/paytech.service';
 import { PremiumController } from './premium.controller';
+import { UploadController } from './upload.controller';
 import { PremiumWebhookController } from './premium-webhook.controller';
 import { PremiumGuard } from './guards/premium.guard';
 import { Subscription, SubscriptionSchema } from './schemas/subscription.schema';
@@ -27,6 +28,9 @@ import { Post, PostSchema } from './schemas/post.schema';
 import { Notification, NotificationSchema } from '../notifications/schemas/notification.schema';
 import { Order, OrderSchema } from '../services/schemas/order.schema';
 import { Transaction, TransactionSchema } from '../services/schemas/transaction.schema';
+import { Service, ServiceSchema } from '../services/schemas/service.schema'; // Added
+import { User, UserSchema } from '../users/schemas/user.schema'; // Added
+import { IdentityVerification, IdentityVerificationSchema } from './schemas/identityVerification.schema'; // Added
 import { BoostController } from './boost.controller';
 import { CVthequeController } from './cvtheque.controller';
 import { StatsController } from './stats.controller';
@@ -46,6 +50,8 @@ import { JobBroadcastService } from './services/job-broadcast.service';
 import { MarketingController } from './marketing.controller';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { PostsController } from './posts.controller';
+import { UsersModule } from '../users/users.module';
+import { ServicesModule } from '../services/services.module';
 
 @Module({
     imports: [
@@ -68,8 +74,13 @@ import { PostsController } from './posts.controller';
             { name: Notification.name, schema: NotificationSchema },
             { name: Order.name, schema: OrderSchema },
             { name: Transaction.name, schema: TransactionSchema },
+            { name: Service.name, schema: ServiceSchema }, // Added for PostsController
+            { name: User.name, schema: UserSchema }, // Added for PremiumService
+            { name: IdentityVerification.name, schema: IdentityVerificationSchema }, // Added for IdentityVerificationService
         ]),
         NotificationsModule,
+        UsersModule,
+        ServicesModule,
     ],
     controllers: [
         PremiumController,
@@ -83,6 +94,7 @@ import { PostsController } from './posts.controller';
         JobBroadcastController,
         MarketingController,
         PostsController,
+        UploadController,
     ],
     providers: [
         PremiumService,

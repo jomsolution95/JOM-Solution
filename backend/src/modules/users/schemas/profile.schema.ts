@@ -22,6 +22,9 @@ export class Profile {
     avatarUrl?: string;
 
     @Prop()
+    coverUrl?: string;
+
+    @Prop()
     bio?: string;
 
     @Prop()

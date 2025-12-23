@@ -36,7 +36,7 @@ export interface QuotasUsed {
 
 @Schema({ timestamps: true })
 export class Subscription {
-    @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+    @Prop({ type: Types.ObjectId, ref: 'User', required: true })
     userId!: Types.ObjectId;
 
     @Prop({ required: true, enum: Object.values(SubscriptionPlan) })

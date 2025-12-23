@@ -1,5 +1,6 @@
-import { IsEmail, IsEnum, IsNotEmpty, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, MinLength, IsOptional, IsObject } from 'class-validator';
 import { UserRole } from '../../users/schemas/user.schema';
+import { CreateProfileDto } from '../../profiles/dto/create-profile.dto';
 
 export class RegisterDto {
     @IsEmail()
@@ -12,4 +13,8 @@ export class RegisterDto {
     @IsNotEmpty()
     @IsEnum(UserRole)
     role: UserRole;
+
+    @IsOptional()
+    @IsObject()
+    profile?: CreateProfileDto;
 }
